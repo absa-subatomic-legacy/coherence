@@ -66,7 +66,7 @@ class TestEntry(TestElement):
                 self.message = result.message
         return TestResult(self.test_stage, self.message)
 
-    def run(self, slack_user_ledger, data_store):
+    def run(self, slack_user_workspace, data_store):
         return TestResult(self.test_stage)
 
 

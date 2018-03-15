@@ -1,13 +1,14 @@
 import logging
+import json
 
 from coherence.user.SlackUser import SlackUser
-from coherence.user.SlackUserLedger import SlackUserLedger
+from coherence.user.SlackUserWorkspace import SlackUserWorkspace
 
 
 class SlackTestSuite(object):
     def __init__(self, description="Test Suite"):
         self.description = description
-        self.slack_user_ledger = SlackUserLedger()
+        self.slack_user_workspace = SlackUserWorkspace()
         self.tests = []
         self.successful_tests = []
         self.failed_tests = []
@@ -24,27 +25,35 @@ class SlackTestSuite(object):
             run_tests = len(self.tests) > 0
 
     def add_slack_user(self, username, token):
-        self.slack_user_ledger.add_slack_user_client(SlackUser(username, token))
+        self.slack_user_workspace.add_slack_user_client(SlackUser(username, token))
 
     def add_test(self, new_test):
         self.tests.append(new_test)
 
     def _connect_clients(self):
-        for slack_user in self.slack_user_ledger.slack_user_clients:
+        for slack_user in self.slack_user_workspace.slack_user_clients:
             if not slack_user.connect():
                 logging.error("{user} slack client failed to connect".format(user=slack_user.name))
                 exit(1)
-        self.slack_user_ledger.set_slack_user_list(self.slack_user_ledger.slack_user_clients[0].query_user_list())
-        for slack_user in self.slack_user_ledger.slack_user_clients:
-            slack_user.link_user_details(self.slack_user_ledger.slack_user_list)
+        self.slack_user_workspace.set_workspace_domain(
+            self.slack_user_workspace.slack_user_clients[0].query_workspace_domain())
+        self.slack_user_workspace.set_workspace_user_details(
+            self.slack_user_workspace.slack_user_clients[0].query_workspace_user_details())
+        self.slack_user_workspace.set_workspace_channels(
+            self.slack_user_workspace.slack_user_clients[0].query_workspace_channels())
+        self.slack_user_workspace.set_workspace_groups(
+            self.slack_user_workspace.slack_user_clients[0].query_workspace_groups())
+        for slack_user in self.slack_user_workspace.slack_user_clients:
+            slack_user.link_user_details(self.slack_user_workspace.workspace_user_details)
 
     def _read_slack_events(self):
         self.new_events = False
-        for slack_user in self.slack_user_ledger.slack_user_clients:
+        for slack_user in self.slack_user_workspace.slack_user_clients:
             events = slack_user.client.rtm_read()
             for event in events:
                 slack_user.events.append(event)
-                logging.debug("User {user} received event {event}".format(user=slack_user.username, event=event))
+                logging.debug("User {user} received event {event}"
+                              .format(user=slack_user.username, event=json.dumps(event)))
                 self.new_events = True
 
     def _process_current_test(self):
@@ -52,7 +61,7 @@ class SlackTestSuite(object):
             current_test = self.tests[0]
             if self.new_events:
                 logging.debug("Processing new events")
-            result = current_test.test(self.slack_user_ledger)
+            result = current_test.test(self.slack_user_workspace)
             if not current_test.is_live:
                 if result.result_code == 1:
                     self.successful_tests += [current_test]
@@ -65,5 +74,5 @@ class SlackTestSuite(object):
                 self.tests = self.tests[1:]
 
     def _clear_event_stores(self):
-        for slack_user in self.slack_user_ledger.slack_user_clients:
+        for slack_user in self.slack_user_workspace.slack_user_clients:
             slack_user.events = []

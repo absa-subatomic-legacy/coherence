@@ -1,13 +1,15 @@
 import json
 import logging
-import urllib.parse
 
 import requests
 
 from coherence.testing.Test import TestResult
 
 
-def _expect_dm_message(to_user_client, from_user_id, message_text=None, ignore_case=True):
+def _expect_dm_message(to_user_client,
+                       from_user_id,
+                       message_text=None,
+                       ignore_case=True):
     for event in to_user_client.events:
         if event["type"] == "message":
             if "user" in event and event["user"] == from_user_id:
@@ -16,7 +18,9 @@ def _expect_dm_message(to_user_client, from_user_id, message_text=None, ignore_c
     return None
 
 
-def _try_compare_message_text(real_message, comparison_text, ignore_case=True):
+def _try_compare_message_text(real_message,
+                              comparison_text,
+                              ignore_case=True):
     result = False
     if comparison_text is not None:
         actual_text = real_message
@@ -32,20 +36,25 @@ def _try_compare_message_text(real_message, comparison_text, ignore_case=True):
     return result
 
 
-def send_message_to_user(from_user_slack_name, to_user_slack_name, message):
-    def send_message_function(slack_user_ledger, data_store):
-        user_sender = slack_user_ledger.find_user_client_by_username(from_user_slack_name)
-        user_receiver_details = slack_user_ledger.find_user_by_username(to_user_slack_name)
+def send_message_to_user(from_user_slack_name,
+                         to_user_slack_name,
+                         message):
+    def send_message_function(slack_user_workspace, data_store):
+        user_sender = slack_user_workspace.find_user_client_by_username(from_user_slack_name)
+        user_receiver_details = slack_user_workspace.find_user_by_username(to_user_slack_name)
         user_sender.send_message(user_receiver_details["id"], message)
         return TestResult(1)
 
     return send_message_function
 
 
-def expect_message_from_user(from_user_slack_name, to_user_slack_name, message_text=None, ignore_case=True):
-    def expect_message_from_user_function(slack_user_ledger, data_store):
-        user_sender_details = slack_user_ledger.find_user_by_username(from_user_slack_name)
-        user_receiver = slack_user_ledger.find_user_client_by_username(to_user_slack_name)
+def expect_message_from_user(from_user_slack_name,
+                             to_user_slack_name,
+                             message_text=None,
+                             ignore_case=True):
+    def expect_message_from_user_function(slack_user_workspace, data_store):
+        user_sender_details = slack_user_workspace.find_user_by_username(from_user_slack_name)
+        user_receiver = slack_user_workspace.find_user_client_by_username(to_user_slack_name)
         message = _expect_dm_message(user_receiver, user_sender_details["id"], message_text, ignore_case)
         if message is not None:
             return TestResult(1)
@@ -54,11 +63,14 @@ def expect_message_from_user(from_user_slack_name, to_user_slack_name, message_t
     return expect_message_from_user_function
 
 
-def expect_and_store_action_message(from_user_slack_name, to_user_slack_name, event_storage_name, message_text=None,
+def expect_and_store_action_message(from_user_slack_name,
+                                    to_user_slack_name,
+                                    event_storage_name,
+                                    message_text=None,
                                     ignore_case=True):
-    def expect_and_store_action_message_function(slack_user_ledger, data_store):
-        user_sender_details = slack_user_ledger.find_user_by_username(from_user_slack_name)
-        user_receiver = slack_user_ledger.find_user_client_by_username(to_user_slack_name)
+    def expect_and_store_action_message_function(slack_user_workspace, data_store):
+        user_sender_details = slack_user_workspace.find_user_by_username(from_user_slack_name)
+        user_receiver = slack_user_workspace.find_user_client_by_username(to_user_slack_name)
         for event in user_receiver.events:
             if event["type"] == "message" and event["user"] == user_sender_details["id"]:
                 if len(event["attachments"]) > 0:
@@ -73,9 +85,12 @@ def expect_and_store_action_message(from_user_slack_name, to_user_slack_name, ev
     return expect_and_store_action_message_function
 
 
-def respond_to_stored_action_message(from_user_slack_name, event_storage_name, attachment_id, action_id):
-    def respond_to_stored_action_message_function(slack_user_ledger, data_store):
-        user_sender = slack_user_ledger.find_user_client_by_username(from_user_slack_name)
+def respond_to_stored_action_message(from_user_slack_name,
+                                     event_storage_name,
+                                     attachment_id,
+                                     action_id):
+    def respond_to_stored_action_message_function(slack_user_workspace, data_store):
+        user_sender = slack_user_workspace.find_user_client_by_username(from_user_slack_name)
         button_event = data_store[event_storage_name]
         response_body = {}
         service_id = button_event["bot_id"]
@@ -96,7 +111,8 @@ def respond_to_stored_action_message(from_user_slack_name, event_storage_name, a
             if found_action:
                 break
 
-        request_url = "https://{domain}.slack.com/api/chat.attachmentAction".format(domain=user_sender.slack_domain)
+        request_url = "https://{domain}.slack.com/api/chat.attachmentAction" \
+            .format(domain=slack_user_workspace.workspace_domain)
         response = requests.post(request_url,
                                  files={
                                      'payload': (None, json.dumps(response_body)),
