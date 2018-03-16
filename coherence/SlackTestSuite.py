@@ -1,5 +1,6 @@
 import logging
 import json
+from colorama import Fore, Style
 
 from coherence.user.SlackUser import SlackUser
 from coherence.user.SlackUserWorkspace import SlackUserWorkspace
@@ -35,14 +36,9 @@ class SlackTestSuite(object):
             if not slack_user.connect():
                 logging.error("{user} slack client failed to connect".format(user=slack_user.name))
                 exit(1)
-        self.slack_user_workspace.set_workspace_domain(
-            self.slack_user_workspace.slack_user_clients[0].query_workspace_domain())
-        self.slack_user_workspace.set_workspace_user_details(
-            self.slack_user_workspace.slack_user_clients[0].query_workspace_user_details())
-        self.slack_user_workspace.set_workspace_channels(
-            self.slack_user_workspace.slack_user_clients[0].query_workspace_channels())
-        self.slack_user_workspace.set_workspace_groups(
-            self.slack_user_workspace.slack_user_clients[0].query_workspace_groups())
+
+        self._configure_workspace()
+
         for slack_user in self.slack_user_workspace.slack_user_clients:
             slack_user.link_user_details(self.slack_user_workspace.workspace_user_details)
 
@@ -54,6 +50,8 @@ class SlackTestSuite(object):
                 slack_user.events.append(event)
                 logging.debug("User {user} received event {event}"
                               .format(user=slack_user.username, event=json.dumps(event)))
+                if event["type"] == "channel_created":
+                    self.slack_user_workspace.workspace_channels.append(event["channel"])
                 self.new_events = True
 
     def _process_current_test(self):
@@ -65,14 +63,37 @@ class SlackTestSuite(object):
             if not current_test.is_live:
                 if result.result_code == 1:
                     self.successful_tests += [current_test]
-                    logging.info(
-                        "Test passed: {name}".format(name=current_test.name))
+                    print(f"{Fore.GREEN}Test passed: { current_test.name}{Style.RESET_ALL}")
                 else:
                     self.failed_tests += [current_test]
-                    logging.info(
-                        "Test failed: {name} - {message}".format(name=current_test.name, message=result.message))
+
+                    print(f"{Fore.LIGHTRED_EX}Test failed: {current_test.name} - {result.message}{Style.RESET_ALL}")
                 self.tests = self.tests[1:]
+
+            if len(self.tests) == 0:
+                total_tests = str(len(self.successful_tests) + len(self.failed_tests))
+
+                summary = f"\n\n{Fore.GREEN}{str(len(self.successful_tests))}/{total_tests} " \
+                          f"tests passed\n{Style.RESET_ALL}"
+                for test in self.successful_tests:
+                    summary += f"{Fore.GREEN}Test passed: {test.name}{Style.RESET_ALL}\n"
+
+                summary += f"\n{Fore.LIGHTRED_EX}{str(len(self.failed_tests))}/{total_tests} tests failed"
+                for test in self.failed_tests:
+                    summary += f"{Fore.LIGHTRED_EX}Test failed: {test.name} - {result.message}{Style.RESET_ALL}\n"
+
+                print(summary)
 
     def _clear_event_stores(self):
         for slack_user in self.slack_user_workspace.slack_user_clients:
             slack_user.events = []
+
+    def _configure_workspace(self):
+        self.slack_user_workspace.set_workspace_domain(
+            self.slack_user_workspace.slack_user_clients[0].query_workspace_domain())
+        self.slack_user_workspace.set_workspace_user_details(
+            self.slack_user_workspace.slack_user_clients[0].query_workspace_user_details())
+        self.slack_user_workspace.set_workspace_channels(
+            self.slack_user_workspace.slack_user_clients[0].query_workspace_channels())
+        self.slack_user_workspace.set_workspace_groups(
+            self.slack_user_workspace.slack_user_clients[0].query_workspace_groups())

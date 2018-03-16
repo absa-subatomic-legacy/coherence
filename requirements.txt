@@ -1,0 +1,2 @@
+colorama=0.3.9
+slackclient=1.1.3

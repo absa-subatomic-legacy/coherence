@@ -27,6 +27,15 @@ class SlackUser(object):
             as_user=True
         )
 
+    def delete_channel(self, channel_id):
+        logging.debug(self.token)
+        logging.debug(channel_id)
+        response = self.client.api_call(
+            "channels.delete",
+            channel=channel_id
+        )
+        logging.debug(response)
+
     def clear_event_store(self):
         self.events = []
 

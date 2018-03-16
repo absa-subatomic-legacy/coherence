@@ -44,3 +44,27 @@ class SlackUserWorkspace(object):
 
     def add_slack_user_client(self, new_user):
         self.slack_user_clients.append(new_user)
+
+    def find_channel_by_name(self, channel_name):
+        for channel in self.workspace_channels:
+            if channel["name"] == channel_name:
+                return channel
+        return None
+
+    def find_channel_by_slack_id(self, slack_id):
+        for channel in self.workspace_channels:
+            if channel["id"] == slack_id:
+                return channel
+        return None
+
+    def find_group_by_name(self, group_name):
+        for group in self.workspace_groups:
+            if group["name"] == group_name:
+                return group
+        return None
+
+    def find_group_by_slack_id(self, slack_id):
+        for group in self.workspace_groups:
+            if group["id"] == slack_id:
+                return group
+        return None
