@@ -2,6 +2,8 @@ import logging
 
 from slackclient import SlackClient
 
+from coherence.logging.ConsoleLogging import ConsoleLogger
+
 
 class SlackUser(object):
     def __init__(self, username, slack_token):
@@ -26,30 +28,78 @@ class SlackUser(object):
             text=message,
             as_user=True
         )
+        logging.info(f"User {self.username} sent message to {destination}. Content: {message}")
+
+    def invite_to_channel(self, user_id, channel_id):
+        response = self.client.api_call(
+            "channels.invite",
+            user=user_id,
+            channel=channel_id
+        )
+        result = response["ok"]
+        if result is False:
+            ConsoleLogger.error(
+                f"Failed to invite user {user_id} to channel {channel_id} as user {self.username}:{self.slack_id}")
+        else:
+            logging.info(f"User {user_id} invited to channel {channel_id}")
+        return result
+
+    def invite_to_group(self, user_id, group_id):
+        response = self.client.api_call(
+            "groups.invite",
+            user=user_id,
+            channel=group_id
+        )
+        result = response["ok"]
+        if result is False:
+            ConsoleLogger.error(
+                f"Failed to invite user {user_id} to group {group_id} as user {self.username}:{self.slack_id}")
+        else:
+            logging.info(f"User {user_id} invited to group {group_id}")
+        return result, response
+
+    def kick_from_channel(self, user_id, channel_id):
+        response = self.client.api_call(
+            "channels.kick",
+            user=user_id,
+            channel=channel_id
+        )
+        result = response["ok"]
+        if result is False:
+            ConsoleLogger.error(
+                f"Failed to kick user {user_id} from channel {channel_id} as user {self.username}:{self.slack_id}")
+        else:
+            logging.info(f"User {user_id} kicked from channel {channel_id}")
+        return result, response
+
+    def kick_from_group(self, user_id, group_id):
+        response = self.client.api_call(
+            "groups.kick",
+            user=user_id,
+            channel=group_id
+        )
+        result = response["ok"]
+        if result is False:
+            ConsoleLogger.error(
+                f"Failed to kick user {user_id} from group {group_id} as user {self.username}:{self.slack_id}")
+        else:
+            logging.info(f"User {user_id} kicked from group {group_id}")
+        return result, response
 
     def delete_channel(self, channel_id):
-        logging.debug(self.token)
-        logging.debug(channel_id)
         response = self.client.api_call(
             "channels.delete",
             channel=channel_id
         )
-        logging.debug(response)
+        result = response["ok"]
+        if result is True:
+            logging.info(f"Channel {channel_id} deleted successfully.")
+        else:
+            ConsoleLogger.error(f"Channel {channel_id} delete command failed as user {self.username}:{self.slack_id}")
+        return result, response
 
     def clear_event_store(self):
         self.events = []
-
-    def _get_user_identity(self, workspace_user_details):
-        for user in workspace_user_details:
-            if user["name"] == self.username:
-                self.slack_id = user["id"]
-                logging.info("Associated slack id {slack_id} to username {username}".format(
-                    slack_id=self.slack_id, username=self.username))
-                return
-        logging.error("No associated slack user details found for user {username}."
-                      " List of available users:\n{userlist}"
-                      .format(username=self.username, userlist=workspace_user_details))
-        exit(1)
 
     def query_workspace_domain(self):
         domain = None
@@ -79,7 +129,7 @@ class SlackUser(object):
             result = self.client.api_call("channels.list", cursor=cursor)
         else:
             result = self.client.api_call("channels.list")
-        logging.debug("Got user list {channels_list}".format(channels_list=result))
+        logging.debug("Got channel list {channels_list}".format(channels_list=result))
         if result["ok"]:
             channels_list += result["channels"]
         if "response_metadata" in result and "next_cursor" in result["response_metadata"]:
@@ -90,8 +140,20 @@ class SlackUser(object):
     def query_workspace_groups(self):
         groups_list = []
         result = self.client.api_call("groups.list")
-        logging.debug("Got user list {groups_list}".format(groups_list=result))
+        logging.debug("Got group list {groups_list}".format(groups_list=result))
         if result["ok"]:
             groups_list += result["groups"]
 
         return groups_list
+
+    def _get_user_identity(self, workspace_user_details):
+        for user in workspace_user_details:
+            if user["name"] == self.username:
+                self.slack_id = user["id"]
+                logging.info("Associated slack id {slack_id} to username {username}".format(
+                    slack_id=self.slack_id, username=self.username))
+                return
+        logging.error("No associated slack user details found for user {username}."
+                      " List of available users:\n{userlist}"
+                      .format(username=self.username, userlist=workspace_user_details))
+        exit(1)

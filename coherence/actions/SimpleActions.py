@@ -1,5 +1,4 @@
 import json
-import logging
 
 import requests
 
@@ -44,7 +43,7 @@ def _try_compare_message_text(real_message,
 def _try_get_channel_id(slack_user_workspace, channel_name):
     channel_id = None
     if channel_name is not None:
-        channel_details = slack_user_workspace.find_channel_by_name(channel_name)
+        channel_details = slack_user_workspace.find_group_or_channel_by_name(channel_name)
         if channel_details is not None:
             channel_id = channel_details["id"]
         else:
@@ -64,7 +63,6 @@ def send_message_to_user(from_user_slack_name,
                          to_user_slack_name,
                          message):
     def send_message_function(slack_user_workspace, data_store):
-        logging.debug("Sending message {message}".format(message=message))
         user_sender = slack_user_workspace.find_user_client_by_username(from_user_slack_name)
         user_receiver_details = slack_user_workspace.find_user_by_username(to_user_slack_name)
         user_sender.send_message(user_receiver_details["id"], message)
@@ -192,3 +190,39 @@ def delete_channel(as_user, channel_name):
         return TestResult(1)
 
     return delete_channel_function
+
+
+def invite_user_to_channel(inviting_user, invited_user, channel_name, is_private=False):
+    def invite_user_to_channel_function(slack_user_workspace, data_store):
+        inviting_user_client = slack_user_workspace.find_user_client_by_username(inviting_user)
+        invited_user_details = slack_user_workspace.find_user_by_username(invited_user)
+        channel_id = _try_get_channel_id(slack_user_workspace, channel_name)
+        if is_private:
+            result, response = inviting_user_client.invite_to_group(invited_user_details["id"], channel_id)
+        else:
+            result, response = inviting_user_client.invite_to_channel(invited_user_details["id"], channel_id)
+
+        test_result = TestResult(1)
+        if result is False:
+            test_result = TestResult(2, response["error"])
+        return test_result
+
+    return invite_user_to_channel_function
+
+
+def kick_user_from_channel(kicking_user, kicked_user, channel_name, is_private=False):
+    def kick_user_from_channel_function(slack_user_workspace, data_store):
+        kicker_user_client = slack_user_workspace.find_user_client_by_username(kicking_user)
+        kicked_user_details = slack_user_workspace.find_user_by_username(kicked_user)
+        channel_id = _try_get_channel_id(slack_user_workspace, channel_name)
+        if is_private:
+            result, response = kicker_user_client.kick_from_group(kicked_user_details["id"], channel_id)
+        else:
+            result, response = kicker_user_client.kick_from_channel(kicked_user_details["id"], channel_id)
+
+        test_result = TestResult(1)
+        if result is False:
+            test_result = TestResult(2, response["error"])
+        return test_result
+
+    return kick_user_from_channel_function

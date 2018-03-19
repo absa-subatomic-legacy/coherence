@@ -68,3 +68,15 @@ class SlackUserWorkspace(object):
             if group["id"] == slack_id:
                 return group
         return None
+
+    def find_group_or_channel_by_name(self, name):
+        result = self.find_channel_by_name(name)
+        if result is None:
+            result = self.find_group_by_name(name)
+        return result
+
+    def find_group_or_channel_by_slack_id(self, slack_id):
+        result = self.find_channel_by_slack_id(slack_id)
+        if result is None:
+            result = self.find_group_by_slack_id(slack_id)
+        return result

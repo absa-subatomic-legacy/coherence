@@ -2,24 +2,27 @@ import logging
 import json
 from colorama import Fore, Style
 
+from coherence.logging.ConsoleLogging import ConsoleLogger
 from coherence.user.SlackUser import SlackUser
 from coherence.user.SlackUserWorkspace import SlackUserWorkspace
 
 
 class SlackTestSuite(object):
-    def __init__(self, description="Test Suite"):
+    def __init__(self, description="Test Suite", log_file=None, log_level=logging.INFO, listen_after_tests=False):
         self.description = description
         self.slack_user_workspace = SlackUserWorkspace()
         self.tests = []
         self.successful_tests = []
         self.failed_tests = []
         self.new_events = False
+        self.log_file = log_file
+        self._set_log_file(log_file, log_level)
+        self.listen_after_tests = listen_after_tests
 
     def run_tests(self):
         self._connect_clients()
         run_tests = len(self.tests) > 0
-        listening = True
-        while run_tests or listening:
+        while run_tests or self.listen_after_tests:
             self._read_slack_events()
             self._process_current_test()
             self._clear_event_stores()
@@ -48,8 +51,8 @@ class SlackTestSuite(object):
             events = slack_user.client.rtm_read()
             for event in events:
                 slack_user.events.append(event)
-                logging.debug("User {user} received event {event}"
-                              .format(user=slack_user.username, event=json.dumps(event)))
+                logging.info("User {user} received event {event}"
+                             .format(user=slack_user.username, event=json.dumps(event)))
                 if event["type"] == "channel_created":
                     self.slack_user_workspace.workspace_channels.append(event["channel"])
                 self.new_events = True
@@ -58,16 +61,16 @@ class SlackTestSuite(object):
         if len(self.tests) > 0:
             current_test = self.tests[0]
             if self.new_events:
-                logging.debug("Processing new events")
+                logging.info("Processing new events")
             result = current_test.test(self.slack_user_workspace)
             if not current_test.is_live:
                 if result.result_code == 1:
                     self.successful_tests += [current_test]
-                    print(f"{Fore.GREEN}Test passed: { current_test.name}{Style.RESET_ALL}")
+                    ConsoleLogger.success(f"Test passed: { current_test.name}")
                 else:
                     self.failed_tests += [current_test]
 
-                    print(f"{Fore.LIGHTRED_EX}Test failed: {current_test.name} - {result.message}{Style.RESET_ALL}")
+                    ConsoleLogger.error(f"Test failed: {current_test.name} - {result.message}")
                 self.tests = self.tests[1:]
 
             if len(self.tests) == 0:
@@ -78,11 +81,11 @@ class SlackTestSuite(object):
                 for test in self.successful_tests:
                     summary += f"{Fore.GREEN}Test passed: {test.name}{Style.RESET_ALL}\n"
 
-                summary += f"\n{Fore.LIGHTRED_EX}{str(len(self.failed_tests))}/{total_tests} tests failed"
+                summary += f"\n{Fore.RED}{str(len(self.failed_tests))}/{total_tests} tests failed\n"
                 for test in self.failed_tests:
-                    summary += f"{Fore.LIGHTRED_EX}Test failed: {test.name} - {result.message}{Style.RESET_ALL}\n"
+                    summary += f"{Fore.RED}Test failed: {test.name} - {test.message}{Style.RESET_ALL}\n"
 
-                print(summary)
+                ConsoleLogger.log(summary)
 
     def _clear_event_stores(self):
         for slack_user in self.slack_user_workspace.slack_user_clients:
@@ -97,3 +100,19 @@ class SlackTestSuite(object):
             self.slack_user_workspace.slack_user_clients[0].query_workspace_channels())
         self.slack_user_workspace.set_workspace_groups(
             self.slack_user_workspace.slack_user_clients[0].query_workspace_groups())
+
+    def _set_log_file(self, log_file, log_level):
+        if log_file is not None:
+            logger = logging.getLogger()
+            logger.setLevel(log_level)
+
+            # create a file handler
+            handler = logging.FileHandler(log_file)
+            handler.setLevel(log_level)
+
+            # create a logging format
+            formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            handler.setFormatter(formatter)
+
+            # add the handlers to the logger
+            logger.addHandler(handler)
