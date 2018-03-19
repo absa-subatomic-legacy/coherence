@@ -9,13 +9,18 @@ def _expect_message(to_user_client,
                     from_user_id,
                     channel_id=None,
                     message_text=None,
-                    ignore_case=True):
+                    ignore_case=True,
+                    is_thread=False,
+                    thread_ts=None):
     for event in to_user_client.events:
         if event["type"] == "message":
             message = event
             if "subtype" in event and "message" in event:
                 message = event["message"]
-            if "user" in message and message["user"] == from_user_id:
+
+            event_conditions_pass = (not is_thread or "thread_ts" in event) and \
+                                    (thread_ts is None or event["thread_ts"] == thread_ts)
+            if event_conditions_pass and "user" in message and message["user"] == from_user_id:
                 if channel_id is None or ("channel" in message and message["channel"]):
                     if _try_compare_message_text(message["text"], message_text, ignore_case):
                         return event
@@ -61,11 +66,33 @@ def _get_main_message_body(event):
 
 def send_message_to_user(from_user_slack_name,
                          to_user_slack_name,
-                         message):
+                         message,
+                         thread_ts=None,
+                         thread_ts_name=None):
     def send_message_function(slack_user_workspace, data_store):
         user_sender = slack_user_workspace.find_user_client_by_username(from_user_slack_name)
         user_receiver_details = slack_user_workspace.find_user_by_username(to_user_slack_name)
-        user_sender.send_message(user_receiver_details["id"], message)
+        actual_thread_ts = thread_ts
+        if thread_ts_name in data_store:
+            actual_thread_ts = data_store[thread_ts_name]
+        user_sender.send_message(user_receiver_details["id"], message, thread_ts=actual_thread_ts)
+        return TestResult(1)
+
+    return send_message_function
+
+
+def send_message_to_channel(from_user_slack_name,
+                            channel_name,
+                            message,
+                            thread_ts=None,
+                            thread_ts_name=None):
+    def send_message_function(slack_user_workspace, data_store):
+        user_sender = slack_user_workspace.find_user_client_by_username(from_user_slack_name)
+        channel_details = slack_user_workspace.find_channel_by_name(channel_name)
+        actual_thread_ts = thread_ts
+        if thread_ts_name in data_store:
+            actual_thread_ts = data_store[thread_ts_name]
+        user_sender.send_message(channel_details["id"], message, thread_ts=actual_thread_ts)
         return TestResult(1)
 
     return send_message_function
@@ -74,19 +101,33 @@ def send_message_to_user(from_user_slack_name,
 def expect_message_from_user(from_user_slack_name,
                              to_user_slack_name,
                              channel_name=None,
+                             thread_ts=None,
+                             thread_ts_name=None,
                              message_text=None,
                              ignore_case=True,
-                             validators=[]):
+                             validators=None):
+    if validators is None:
+        validators = []
+
     def expect_message_from_user_function(slack_user_workspace, data_store):
-        user_sender_details = slack_user_workspace.find_user_by_username(from_user_slack_name)
         user_receiver = slack_user_workspace.find_user_client_by_username(to_user_slack_name)
+        user_sender_details = slack_user_workspace.find_user_by_username(from_user_slack_name)
         channel_id = _try_get_channel_id(slack_user_workspace, channel_name)
-        message = _expect_message(user_receiver, user_sender_details["id"], channel_id, message_text, ignore_case)
+        actual_thread_ts = thread_ts
+        is_thread = False
+        if thread_ts_name in data_store:
+            actual_thread_ts = data_store[thread_ts_name]
+        if actual_thread_ts is not None:
+            is_thread = True
+        message = _expect_message(user_receiver, user_sender_details["id"], channel_id, message_text, ignore_case,
+                                  is_thread, actual_thread_ts)
         if message is not None:
             validated = True
             for validator in validators:
                 validated &= validator(message)
             if validated:
+                if thread_ts_name is not None:
+                    data_store[thread_ts_name] = message["thread_ts"]
                 return TestResult(1)
         return TestResult(0)
 
@@ -99,7 +140,10 @@ def expect_and_store_action_message(from_user_slack_name,
                                     channel_name=None,
                                     message_text=None,
                                     ignore_case=True,
-                                    validators=[]):
+                                    validators=None):
+    if validators is None:
+        validators = []
+
     def expect_and_store_action_message_function(slack_user_workspace, data_store):
         user_sender_details = slack_user_workspace.find_user_by_username(from_user_slack_name)
         user_receiver = slack_user_workspace.find_user_client_by_username(to_user_slack_name)
