@@ -9,7 +9,7 @@ TESTING_STAGES = ["PENDING", "DO", "EXPECT", "CLEANUP"]
 
 
 class TestElement(object):
-    def __init__(self, run_element, timeout=5000):
+    def __init__(self, run_element, timeout=15000):
         self.test_stage = 0
         self.timeout = timeout
         self.next_action = lambda slack_users: TestResult(1, "SUCCESS")
@@ -18,7 +18,7 @@ class TestElement(object):
         self.start_time = 0
         self.is_started = False
 
-    def then(self, next_action, timeout=5000):
+    def then(self, next_action, timeout=15000):
         found_leaf_then = False
         current_element = self
         while not found_leaf_then:
@@ -33,7 +33,7 @@ class TestElement(object):
 
 
 class TestEntry(TestElement):
-    def __init__(self, name, timeout=5000):
+    def __init__(self, name, timeout=15000):
         super().__init__(self.run, timeout)
         self.current_action = self
         self.is_live = True

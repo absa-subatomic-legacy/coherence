@@ -21,12 +21,15 @@ class SlackUser(object):
     def link_user_details(self, user_detail_list):
         self._get_user_identity(user_detail_list)
 
-    def send_message(self, destination, message):
+    def send_message(self, destination, message, **kwargs):
+        keyword_args = {k: v for k, v in kwargs.items() if v is not None}
+        keyword_args["channel"] = destination
+        keyword_args["text"] = message
+        keyword_args["as_user"] = True
         self.client.api_call(
             "chat.postMessage",
-            channel=destination,
-            text=message,
-            as_user=True
+            None,
+            **keyword_args
         )
         logging.info(f"User {self.username} sent message to {destination}. Content: {message}")
 
