@@ -26,6 +26,7 @@ class SlackUser(object):
         keyword_args["channel"] = destination
         keyword_args["text"] = message
         keyword_args["as_user"] = True
+        keyword_args["link_names"] = 1
         self.client.api_call(
             "chat.postMessage",
             None,

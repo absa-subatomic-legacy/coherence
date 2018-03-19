@@ -81,6 +81,23 @@ def send_message_to_user(from_user_slack_name,
     return send_message_function
 
 
+def send_message_to_channel(from_user_slack_name,
+                            channel_name,
+                            message,
+                            thread_ts=None,
+                            thread_ts_name=None):
+    def send_message_function(slack_user_workspace, data_store):
+        user_sender = slack_user_workspace.find_user_client_by_username(from_user_slack_name)
+        channel_details = slack_user_workspace.find_channel_by_name(channel_name)
+        actual_thread_ts = thread_ts
+        if thread_ts_name in data_store:
+            actual_thread_ts = data_store[thread_ts_name]
+        user_sender.send_message(channel_details["id"], message, thread_ts=actual_thread_ts)
+        return TestResult(1)
+
+    return send_message_function
+
+
 def expect_message_from_user(from_user_slack_name,
                              to_user_slack_name,
                              channel_name=None,
