@@ -20,6 +20,7 @@ class SlackTestSuite(object):
         self.listen_after_tests = listen_after_tests
 
     def run_tests(self):
+        ConsoleLogger.success(f"Running coherence test suite: {self.description}")
         self._connect_clients()
         run_tests = len(self.tests) > 0
         while run_tests or self.listen_after_tests:
