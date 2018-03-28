@@ -31,7 +31,7 @@ expected when writing a test.
 
 The test suite cannot run without a user to issue commands with. All built in commands require a user to be specified
 in order to access the workspace. Any user can be used but a slack user token must be created in order to do so. This
-can be done [here]()https://api.slack.com/custom-integrations/legacy-tokens). Users can then added to the 
+can be done [here](https://api.slack.com/custom-integrations/legacy-tokens). Users can then added to the 
 `SlackTestSuite` as follows:
 
 ```python
@@ -42,3 +42,30 @@ A slack user token is usually of the form `xoxp-...`.
 
 Multiple users can be added to the `SlackTestSuite` and each can be used to issue slack commands as shown later in the
 read me.
+
+Tests should then be added to the test suite. Tests added are run synchronously in the order they are added. Adding a 
+test can be done as follows:
+
+```python
+test_suite.add_test(test_function)
+```
+
+Finally the tests are running by invoking the `run_tests` command.
+
+```python
+test_suite.run_tests()
+```
+
+## Creating Tests
+All tests are defined as a series of steps added to a testing chain. The chain starts with a TestEntry instance and new
+elements are added to the chain by invoking the `then` command. `TestElement.then(next_action)` takes a parameter 
+`next_action` which is a function of the form
+- arguments
+    - `slack_user_workspace` - this will contain a reference to the `SlackUserWorkspace`(needs link) instance for the current test
+    suite. It provides access to details such as existing users, groups, and channels metadata along with access to the
+    slack users added to the test suite clients (used to send, receive, listen etc to messages for the associated user).
+    - `data_store` - this is a simple python dictionary that persists any data stored in it for the duration of the test
+     chain. It can be used to store data that will be used by later steps in the chain.  
+- return - The function must return a `TestResult`(needs link) indicating whether the test is successful, unsuccessful, or pending.
+
+Examples of these test actions can be found in the `SimpleActions`(needs link) python module.
