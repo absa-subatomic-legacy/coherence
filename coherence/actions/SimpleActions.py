@@ -2,7 +2,7 @@ import json
 
 import requests
 
-from coherence.testing.Test import TestResult
+from coherence.testing.Test import TestResult, ResultCode
 
 
 def _expect_message(to_user_client,
@@ -76,7 +76,7 @@ def send_message_to_user(from_user_slack_name,
         if thread_ts_name in data_store:
             actual_thread_ts = data_store[thread_ts_name]
         user_sender.send_message(user_receiver_details["id"], message, thread_ts=actual_thread_ts)
-        return TestResult(1)
+        return TestResult(ResultCode.success)
 
     return send_message_function
 
@@ -93,7 +93,7 @@ def send_message_to_channel(from_user_slack_name,
         if thread_ts_name in data_store:
             actual_thread_ts = data_store[thread_ts_name]
         user_sender.send_message(channel_details["id"], message, thread_ts=actual_thread_ts)
-        return TestResult(1)
+        return TestResult(ResultCode.success)
 
     return send_message_function
 
@@ -128,8 +128,8 @@ def expect_message_from_user(from_user_slack_name,
             if validated:
                 if thread_ts_name is not None:
                     data_store[thread_ts_name] = message["thread_ts"]
-                return TestResult(1)
-        return TestResult(0)
+                return TestResult(ResultCode.success)
+        return TestResult(ResultCode.pending)
 
     return expect_message_from_user_function
 
@@ -164,8 +164,8 @@ def expect_and_store_action_message(from_user_slack_name,
                                         validated &= validator(event)
                                     if validated:
                                         data_store[event_storage_name] = event
-                                        return TestResult(1)
-        return TestResult(0)
+                                        return TestResult(ResultCode.success)
+        return TestResult(ResultCode.pending)
 
     return expect_and_store_action_message_function
 
@@ -209,9 +209,9 @@ def respond_to_stored_action_message(from_user_slack_name,
                                  )
 
         if response.status_code == 200:
-            return TestResult(1)
+            return TestResult(ResultCode.success)
         else:
-            return TestResult(2, response.content)
+            return TestResult(ResultCode.failure, response.content)
 
     return respond_to_stored_action_message_function
 
@@ -221,8 +221,8 @@ def expect_channel_created(user, channel_name):
         user_client = slack_user_workspace.find_user_client_by_username(user)
         for event in user_client.events:
             if event["type"] == "channel_created" and event["channel"]["name"] == channel_name:
-                return TestResult(1)
-        return TestResult(0)
+                return TestResult(ResultCode.success)
+        return TestResult(ResultCode.failure)
 
     return expect_channel_created_function
 
@@ -231,7 +231,7 @@ def delete_channel(as_user, channel_name):
     def delete_channel_function(slack_user_workspace, data_store):
         as_user_client = slack_user_workspace.find_user_client_by_username(as_user)
         as_user_client.delete_channel(slack_user_workspace.find_channel_by_name(channel_name)["id"])
-        return TestResult(1)
+        return TestResult(ResultCode.success)
 
     return delete_channel_function
 
@@ -246,9 +246,9 @@ def invite_user_to_channel(inviting_user, invited_user, channel_name, is_private
         else:
             result, response = inviting_user_client.invite_to_channel(invited_user_details["id"], channel_id)
 
-        test_result = TestResult(1)
+        test_result = TestResult(ResultCode.success)
         if result is False:
-            test_result = TestResult(2, response["error"])
+            test_result = TestResult(ResultCode.failure, response["error"])
         return test_result
 
     return invite_user_to_channel_function
@@ -264,9 +264,9 @@ def kick_user_from_channel(kicking_user, kicked_user, channel_name, is_private=F
         else:
             result, response = kicker_user_client.kick_from_channel(kicked_user_details["id"], channel_id)
 
-        test_result = TestResult(1)
+        test_result = TestResult(ResultCode.success)
         if result is False:
-            test_result = TestResult(2, response["error"])
+            test_result = TestResult(ResultCode.failure, response["error"])
         return test_result
 
     return kick_user_from_channel_function
