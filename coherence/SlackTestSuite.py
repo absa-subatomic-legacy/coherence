@@ -3,6 +3,7 @@ import json
 from colorama import Fore, Style
 
 from coherence.logging.ConsoleLogging import ConsoleLogger
+from coherence.testing.Test import ResultCode
 from coherence.user.SlackUser import SlackUser
 from coherence.user.SlackUserWorkspace import SlackUserWorkspace
 
@@ -64,7 +65,7 @@ class SlackTestSuite(object):
                 logging.info("Processing new events")
             result = current_test.test(self.slack_user_workspace)
             if not current_test.is_live:
-                if result.result_code == 1:
+                if result.result_code == ResultCode.success:
                     self.successful_tests += [current_test]
                     ConsoleLogger.success(f"Test passed: { current_test.name}")
                 else:
