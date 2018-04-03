@@ -94,7 +94,7 @@ to the receiver. It is assumed this is done successfully and a successful result
 a slack test suite as follows:
 
 ```python
-test_suite.add_test("test_send_message_to_user", BaseTest() \
+test_suite.add_test("test_send_message_to_user", TestPortal() \
                     .then(send_message_to_user("sender_name", "receiver_name", "Hello")))
 ``` 
 
@@ -161,7 +161,7 @@ is created in the `data_store`. This is then called on by the `send_message_to_c
 the channel that was created. These can be used as follows:
 
 ```python
-test_suite.add_test("test_send_message_to_channel", BaseTest() \
+test_suite.add_test("test_send_message_to_channel", TestPortal() \
                     .then(expect_any_channel_created_and_store_name("user_to_listen_as"))
                     .then(send_message_to_channel("user_to_send_as", "Hello")))
 ``` 

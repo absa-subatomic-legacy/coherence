@@ -1,6 +1,8 @@
 import time
 from enum import Enum
 
+from coherence.logging.ConsoleLogging import ConsoleLogger
+
 
 class TestElement(object):
     def __init__(self, run_element, timeout=15000):
@@ -26,9 +28,9 @@ class TestElement(object):
         return self
 
 
-class TestEntry(TestElement):
+class TestPortal(TestElement):
     def __init__(self, timeout=15000):
-        super().__init__(self.run, timeout)
+        super().__init__(self.start_test, timeout)
         self.current_action = self
         self.is_live = True
         self.message = ResultCode.pending.name
@@ -60,8 +62,9 @@ class TestEntry(TestElement):
                 self.message = result.message
         return TestResult(self.test_stage, self.message)
 
-    def run(self, slack_user_workspace, data_store):
-        return TestResult(self.test_stage)
+    def start_test(self, slack_user_workspace, data_store):
+        ConsoleLogger.success(f"Running Test: {self.name}")
+        return TestResult(ResultCode.success)
 
 
 class TestResult(object):
