@@ -222,7 +222,7 @@ def expect_channel_created(user, channel_name):
         for event in user_client.events:
             if event["type"] == "channel_created" and event["channel"]["name"] == channel_name:
                 return TestResult(ResultCode.success)
-        return TestResult(ResultCode.failure)
+        return TestResult(ResultCode.pending)
 
     return expect_channel_created_function
 
