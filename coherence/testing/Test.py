@@ -27,12 +27,12 @@ class TestElement(object):
 
 
 class TestEntry(TestElement):
-    def __init__(self, name, timeout=15000):
+    def __init__(self, timeout=15000):
         super().__init__(self.run, timeout)
         self.current_action = self
         self.is_live = True
         self.message = ResultCode.pending.name
-        self.name = name
+        self.name = "Unnamed Test"
         self.data_store = {}
 
     def test(self, slack_users):

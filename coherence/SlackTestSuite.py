@@ -33,7 +33,8 @@ class SlackTestSuite(object):
     def add_slack_user(self, username, token):
         self.slack_user_workspace.add_slack_user_client(SlackUser(username, token))
 
-    def add_test(self, new_test):
+    def add_test(self, test_name, new_test):
+        new_test.name = test_name
         self.tests.append(new_test)
 
     def _connect_clients(self):
