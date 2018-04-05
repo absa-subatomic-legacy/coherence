@@ -154,7 +154,7 @@ def expect_and_store_action_message(from_user_slack_name,
                 message = event["message"]
             if message["type"] == "message" and message["user"] == user_sender_details["id"]:
                 if channel_id is None or ("channel" in message and message["channel"]):
-                    if len(message["attachments"]) > 0:
+                    if "attachments" in message and len(message["attachments"]) > 0:
                         attachments = message["attachments"]
                         for attachment in attachments:
                             if "actions" in attachment and len(attachment["actions"]) > 0:
