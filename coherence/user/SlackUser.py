@@ -19,7 +19,7 @@ class SlackUser(object):
         return connection_result
 
     def link_user_details(self, user_detail_list):
-        self._get_user_identity(user_detail_list)
+        return self._get_user_identity(user_detail_list)
 
     def send_message(self, destination, message, **kwargs):
         keyword_args = {k: v for k, v in kwargs.items() if v is not None}
@@ -137,7 +137,7 @@ class SlackUser(object):
         if result["ok"]:
             channels_list += result["channels"]
         if "response_metadata" in result and "next_cursor" in result["response_metadata"]:
-            return channels_list + self.query_workspace_user_details(cursor=result["response_metadata"]["next_cursor"])
+            return channels_list + self.query_workspace_channels(cursor=result["response_metadata"]["next_cursor"])
         else:
             return channels_list
 
@@ -156,8 +156,8 @@ class SlackUser(object):
                 self.slack_id = user["id"]
                 logging.info("Associated slack id {slack_id} to username {username}".format(
                     slack_id=self.slack_id, username=self.username))
-                return
+                return True
         logging.error("No associated slack user details found for user {username}."
                       " List of available users:\n{userlist}"
                       .format(username=self.username, userlist=workspace_user_details))
-        exit(1)
+        return False
