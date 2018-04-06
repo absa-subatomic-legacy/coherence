@@ -178,40 +178,23 @@ def respond_to_stored_action_message(from_user_slack_name,
         user_sender = slack_user_workspace.find_user_client_by_username(from_user_slack_name)
         button_event = data_store[event_storage_name]
         button_event_main_message = _get_main_message_body(button_event)
-        response_body = {}
         service_id = button_event_main_message["bot_id"]
         bot_user_id = button_event_main_message["user"]
-        token = user_sender.token
-        found_action = False
         for attachment in button_event_main_message["attachments"]:
             if attachment["id"] == attachment_id and "actions" in attachment:
                 for action in attachment["actions"]:
                     if action["id"] == str(action_id):
-                        response_body["actions"] = [action]
-                        response_body["attachment_id"] = attachment_id
-                        response_body["callback_id"] = attachment["callback_id"]
-                        response_body["channel_id"] = button_event["channel"]
-                        response_body["message_ts"] = button_event_main_message["ts"]
-                        found_action = True
-                        break
-            if found_action:
-                break
+                        result, response = user_sender.attachment_action(service_id, bot_user_id, [action],
+                                                                         attachment_id,
+                                                                         attachment["callback_id"],
+                                                                         button_event["channel"],
+                                                                         button_event_main_message["ts"])
+                        if result:
+                            return TestResult(ResultCode.success)
+                        else:
+                            return TestResult(ResultCode.failure, response.content)
 
-        request_url = "https://{domain}.slack.com/api/chat.attachmentAction" \
-            .format(domain=slack_user_workspace.workspace_domain)
-        response = requests.post(request_url,
-                                 files={
-                                     'payload': (None, json.dumps(response_body)),
-                                     "service_id": (None, service_id),
-                                     "bot_user_id": (None, bot_user_id),
-                                     "token": (None, token)
-                                 }
-                                 )
-
-        if response.status_code == 200:
-            return TestResult(ResultCode.success)
-        else:
-            return TestResult(ResultCode.failure, response.content)
+        return TestResult(ResultCode.failure, "Action or attachment not found.")
 
     return respond_to_stored_action_message_function
 

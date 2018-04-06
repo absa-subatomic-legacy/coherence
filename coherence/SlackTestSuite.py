@@ -50,6 +50,9 @@ class SlackTestSuite(object):
             if not slack_user.link_user_details(self.slack_user_workspace.workspace_user_details):
                 return False
 
+            if slack_user.query_workspace_domain() is None:
+                return False
+
         return True
 
     def _read_slack_events(self):
@@ -99,8 +102,6 @@ class SlackTestSuite(object):
             slack_user.events = []
 
     def _configure_workspace(self):
-        self.slack_user_workspace.set_workspace_domain(
-            self.slack_user_workspace.slack_user_clients[0].query_workspace_domain())
         self.slack_user_workspace.set_workspace_user_details(
             self.slack_user_workspace.slack_user_clients[0].query_workspace_user_details())
         self.slack_user_workspace.set_workspace_channels(

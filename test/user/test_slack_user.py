@@ -1,6 +1,8 @@
+from unittest import mock
 from unittest.mock import MagicMock
 
 from coherence.user.SlackUser import SlackUser
+from test.mocking.mocking import MockRequestsResponse
 
 
 def test_user_connect_expect_success():
@@ -165,3 +167,24 @@ def test_query_workspace_groups_expect_all_groups():
     group_list = user.query_workspace_groups()
     assert len(group_list) == 2
     assert group_list[-1]["id"] == 2
+
+
+def _mock_attachment_action_post(*args, **kwargs):
+    return MockRequestsResponse({"files": kwargs["files"], "url": args[0]}, 200)
+
+
+@mock.patch('coherence.user.SlackUser.requests.post', side_effect=_mock_attachment_action_post)
+def test_attachment_action_expect_body_and_url_correctly_formed(mock_post):
+    user = SlackUser("user", "token")
+    user.domain = "adomain"
+    result, response = user.attachment_action("service_id", "bot_user_id", [{"id": "action_id"}], "attachment_id",
+                                              "callback_id", "channel_id", "message_ts")
+    print(response)
+    assert response.json_data["files"][
+               "payload"][1] == '{"actions": [{"id": "action_id"}], "attachment_id": "attachment_id",' \
+                                ' "callback_id": "callback_id", "channel_id": "channel_id", "message_ts": "message_ts"}'
+    assert response.json_data["files"]["service_id"][1] == "service_id"
+    assert response.json_data["files"]["bot_user_id"][1] == "bot_user_id"
+    assert response.json_data["files"]["token"][1] == "token"
+    assert response.status_code == 200
+    assert result is True

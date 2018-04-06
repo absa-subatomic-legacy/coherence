@@ -23,6 +23,7 @@ def test_connect_clients_expect_clients_connected_successfully():
     user = test_suite.slack_user_workspace.find_user_client_by_username("user")
     user.connect = MagicMock(return_value=True)
     user.link_user_details = MagicMock()
+    user.query_workspace_domain = MagicMock()
     test_suite._configure_workspace = MagicMock()
 
     assert test_suite._connect_clients() is True

@@ -1,5 +1,7 @@
+import json
 import logging
 
+import requests
 from slackclient import SlackClient
 
 from coherence.logging.ConsoleLogging import ConsoleLogger
@@ -13,6 +15,7 @@ class SlackUser(object):
         self.slack_name = ""
         self.slack_id = ""
         self.events = []
+        self.domain = ""
 
     def connect(self):
         connection_result = self.client.rtm_connect()
@@ -102,6 +105,28 @@ class SlackUser(object):
             ConsoleLogger.error(f"Channel {channel_id} delete command failed as user {self.username}:{self.slack_id}")
         return result, response
 
+    def attachment_action(self, service_id, bot_user_id, actions, attachment_id, callback_id, channel_id, message_ts):
+        payload = {
+            "actions": actions,
+            "attachment_id": attachment_id,
+            "callback_id": callback_id,
+            "channel_id": channel_id,
+            "message_ts": message_ts
+        }
+        files = {
+            "payload": (None, json.dumps(payload)),
+            "service_id": (None, service_id),
+            "bot_user_id": (None, bot_user_id),
+            "token": (None, self.token)
+        }
+
+        request_url = f"https://{self.domain}.slack.com/api/chat.attachmentAction"
+        response = requests.post(request_url, files=files)
+        if response.status_code == 200:
+            return True, response
+        else:
+            return False, response
+
     def clear_event_store(self):
         self.events = []
 
@@ -110,6 +135,7 @@ class SlackUser(object):
         result = self.client.api_call("team.info")
         if result["ok"]:
             domain = result["team"]["domain"]
+            self.domain = domain
         # else throw error maybe?
         return domain
 
