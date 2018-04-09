@@ -255,10 +255,10 @@ def test_expect_message_from_user_store_thread_ts_expect_success():
 
 
 def test_expect_message_from_user_with_validator_expect_pending():
-    import coherence.actions.SimpleActions as MockableSimpleActions
-
     def validator(message):
         return False
+
+    import coherence.actions.SimpleActions as MockableSimpleActions
 
     expect_message_function = MockableSimpleActions.expect_message_from_user("user1", "user2", validators=[validator])
     slack_user_workspace = SlackUserWorkspace()
@@ -277,10 +277,10 @@ def test_expect_message_from_user_with_validator_expect_pending():
 
 
 def test_expect_and_store_action_message_with_validator_expect_failure():
-    import coherence.actions.SimpleActions as MockableSimpleActions
-
     def validator(message):
         return False
+
+    import coherence.actions.SimpleActions as MockableSimpleActions
 
     expect_action_function = MockableSimpleActions.expect_and_store_action_message("user1", "user2", "my_action",
                                                                                    validators=[validator])
@@ -401,3 +401,155 @@ def test_respond_to_stored_action_message_expect_no_action_found():
     result = respond_function(slack_user_workspace, data_store)
     assert result.result_code == ResultCode.failure
     assert result.message == "Action or attachment not found."
+
+
+def test_expect_channel_created_expect_success():
+    user1 = SlackUser("user", "token")
+    slack_user_workspace = SlackUserWorkspace()
+    slack_user_workspace.find_user_client_by_username = MagicMock(return_value=user1)
+
+    channel_created_function = SimpleActions.expect_channel_created("user1", "channel1")
+    event = {
+        "type": "channel_created",
+        "channel":
+            {
+                "name": "channel1"
+            }
+    }
+    user1.events += [event]
+    result = channel_created_function(slack_user_workspace, {})
+    assert result.result_code == ResultCode.success
+
+
+def test_expect_channel_created_expect_pending_result():
+    user1 = SlackUser("user", "token")
+    slack_user_workspace = SlackUserWorkspace()
+    slack_user_workspace.find_user_client_by_username = MagicMock(return_value=user1)
+
+    channel_created_function = SimpleActions.expect_channel_created("user1", "channel1")
+    event = {
+        "type": "channel_created",
+        "channel":
+            {
+                "name": "channel2"
+            }
+    }
+    user1.events += [event]
+    result = channel_created_function(slack_user_workspace, {})
+    assert result.result_code == ResultCode.pending
+
+
+def test_invite_user_to_channel_public_channel_expect_success():
+    def mocked_invite_to_channel(user_id, channel_id):
+        return True, {"ok": True}
+
+    import coherence.actions.SimpleActions as MockableSimpleActions
+
+    MockableSimpleActions._try_get_channel_id = MagicMock(return_value="G123456")
+
+    user1 = SlackUser("user1", "token")
+    user1.invite_to_channel = mocked_invite_to_channel
+    slack_user_workspace = SlackUserWorkspace()
+    slack_user_workspace.find_user_client_by_username = MagicMock(return_value=user1)
+    slack_user_workspace.find_user_by_username = MagicMock(return_value={"id": "U222222"})
+
+    invite_user_to_channel = SimpleActions.invite_user_to_channel("user1", "user2", "some_channel")
+    result = invite_user_to_channel(slack_user_workspace, {})
+    assert result.result_code == ResultCode.success
+
+
+def test_invite_user_to_channel_public_channel_expect_failure():
+    def mocked_invite_to_channel(user_id, channel_id):
+        return False, {"ok": False, "error": "ERROR_MESSAGE"}
+
+    import coherence.actions.SimpleActions as MockableSimpleActions
+
+    MockableSimpleActions._try_get_channel_id = MagicMock(return_value="G123456")
+
+    user1 = SlackUser("user1", "token")
+    user1.invite_to_channel = mocked_invite_to_channel
+    slack_user_workspace = SlackUserWorkspace()
+    slack_user_workspace.find_user_client_by_username = MagicMock(return_value=user1)
+    slack_user_workspace.find_user_by_username = MagicMock(return_value={"id": "U222222"})
+
+    invite_user_to_channel = SimpleActions.invite_user_to_channel("user1", "user2", "some_channel")
+    result = invite_user_to_channel(slack_user_workspace, {})
+    assert result.result_code == ResultCode.failure
+    assert result.message == "ERROR_MESSAGE"
+
+
+def test_invite_user_to_channel_private_channel_expect_success():
+    def mocked_invite_to_channel(user_id, channel_id):
+        return True, {"ok": True}
+
+    import coherence.actions.SimpleActions as MockableSimpleActions
+
+    MockableSimpleActions._try_get_channel_id = MagicMock(return_value="G123456")
+
+    user1 = SlackUser("user1", "token")
+    user1.invite_to_group = mocked_invite_to_channel
+    slack_user_workspace = SlackUserWorkspace()
+    slack_user_workspace.find_user_client_by_username = MagicMock(return_value=user1)
+    slack_user_workspace.find_user_by_username = MagicMock(return_value={"id": "U222222"})
+
+    invite_user_to_channel = SimpleActions.invite_user_to_channel("user1", "user2", "some_channel", is_private=True)
+    result = invite_user_to_channel(slack_user_workspace, {})
+    assert result.result_code == ResultCode.success
+
+
+def test_kick_user_to_channel_public_channel_expect_success():
+    def mocked_kick_from_channel(user_id, channel_id):
+        return True, {"ok": True}
+
+    import coherence.actions.SimpleActions as MockableSimpleActions
+
+    MockableSimpleActions._try_get_channel_id = MagicMock(return_value="G123456")
+
+    user1 = SlackUser("user1", "token")
+    user1.kick_from_channel = mocked_kick_from_channel
+    slack_user_workspace = SlackUserWorkspace()
+    slack_user_workspace.find_user_client_by_username = MagicMock(return_value=user1)
+    slack_user_workspace.find_user_by_username = MagicMock(return_value={"id": "U222222"})
+
+    kick_user_from_channel = SimpleActions.kick_user_from_channel("user1", "user2", "some_channel")
+    result = kick_user_from_channel(slack_user_workspace, {})
+    assert result.result_code == ResultCode.success
+
+
+def test_kick_user_to_channel_public_channel_expect_failure():
+    def mocked_kick_from_channel(user_id, channel_id):
+        return False, {"ok": False, "error": "ERROR_MESSAGE"}
+
+    import coherence.actions.SimpleActions as MockableSimpleActions
+
+    MockableSimpleActions._try_get_channel_id = MagicMock(return_value="G123456")
+
+    user1 = SlackUser("user1", "token")
+    user1.kick_from_channel = mocked_kick_from_channel
+    slack_user_workspace = SlackUserWorkspace()
+    slack_user_workspace.find_user_client_by_username = MagicMock(return_value=user1)
+    slack_user_workspace.find_user_by_username = MagicMock(return_value={"id": "U222222"})
+
+    kick_user_from_channel = SimpleActions.kick_user_from_channel("user1", "user2", "some_channel")
+    result = kick_user_from_channel(slack_user_workspace, {})
+    assert result.result_code == ResultCode.failure
+    assert result.message == "ERROR_MESSAGE"
+
+
+def test_kick_user_to_channel_private_channel_expect_success():
+    def mocked_kick_from_channel(user_id, channel_id):
+        return True, {"ok": True}
+
+    import coherence.actions.SimpleActions as MockableSimpleActions
+
+    MockableSimpleActions._try_get_channel_id = MagicMock(return_value="G123456")
+
+    user1 = SlackUser("user1", "token")
+    user1.kick_from_group = mocked_kick_from_channel
+    slack_user_workspace = SlackUserWorkspace()
+    slack_user_workspace.find_user_client_by_username = MagicMock(return_value=user1)
+    slack_user_workspace.find_user_by_username = MagicMock(return_value={"id": "U222222"})
+
+    kick_user_from_channel = SimpleActions.kick_user_from_channel("user1", "user2", "some_channel", is_private=True)
+    result = kick_user_from_channel(slack_user_workspace, {})
+    assert result.result_code == ResultCode.success
