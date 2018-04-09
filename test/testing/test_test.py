@@ -60,7 +60,6 @@ def test_test_element_then_expect_next_action_set_correctly():
 
 
 def test_test_portal_data_store_expect_data_persisted_between_steps():
-
     def mock_action1(slack_user_workspace, data_store):
         data_store["action1"] = "value1"
         return TestResult(ResultCode.success)
@@ -80,3 +79,55 @@ def test_test_portal_data_store_expect_data_persisted_between_steps():
     test.test([])
     assert test.data_store["action1"] == "value1"
     assert test.data_store["action2"] == "value2"
+
+
+def test_test_portal_failed_test_call_stack_expect_correct_call_stack():
+    def mock_action1(slack_user_workspace, data_store):
+        return TestResult(ResultCode.success)
+
+    def mock_action2(slack_user_workspace, data_store):
+        return TestResult(ResultCode.failure)
+
+    test = TestPortal()
+    test.then(mock_action1).then(mock_action2)
+    test.name = "portal"
+    # Run TestPortal initial run element
+    test.test([])
+    # Run mock_action_1
+    test.test([])
+    # Run mock_action_2
+    result = test.test([])
+    assert result.call_stack == "portal\n.then(mock_action1)\n.then(mock_action2)"
+
+
+def test_test_portal_failed_test_with_runtime_error_expect_failed_test_result():
+    def mock_action1(slack_user_workspace, data_store):
+        message = ""[10]  # this will throw a runtime error
+        return TestResult(ResultCode.success, message)
+
+    test = TestPortal()
+    test.then(mock_action1)
+    test.name = "portal"
+    # Run TestPortal initial run element
+    test.test([])
+    # Run mock_action_1
+    result = test.test([])
+    assert result.result_code == ResultCode.failure
+
+
+def test_test_portal_build_simple_stack_message_expect_correct_stack_message():
+    test = TestPortal()
+    test.name = "portal"
+    test.simple_call_stack += ["mock1"]
+    test.simple_call_stack += ["mock2"]
+    result = test._build_simple_stack_message()
+    assert result == "portal\n.then(mock1)\n.then(mock2)"
+
+
+def test_test_portal_push_action_onto_stack_expect_correct_function_name_pushed_onto_stack():
+    def some_function():
+        pass
+
+    test = TestPortal().then(some_function)
+    test._push_action_onto_stack(test.current_action.next_action)
+    assert test.simple_call_stack[0] == "some_function"

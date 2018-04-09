@@ -101,7 +101,7 @@ class SlackTestSuite(object):
                 summary += f"\n{Fore.RED}{str(len(self.failed_tests))}/{total_tests} tests failed\n"
                 for test in self.failed_tests:
                     summary += f"{Fore.RED}Test failed: {Fore.LIGHTRED_EX}{test.name}\n" \
-                               f"{Fore.RED}Action Stack: {Fore.YELLOW}{test.call_stack}\n" \
+                               f"{Fore.RED}Action Stack: {Fore.YELLOW}{test.call_stack_message}\n" \
                                f"{Fore.RED}Result Message: {Fore.YELLOW}{test.message}\n\n{Style.RESET_ALL}"
 
                 ConsoleLogger.log(summary)

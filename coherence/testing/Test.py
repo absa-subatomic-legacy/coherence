@@ -14,7 +14,7 @@ class TestElement(object):
         self.has_child = False
         self.start_time = 0
         self.is_started = False
-        self.call_stack = ""
+        self.call_stack_message = ""
 
     def then(self, next_action, timeout=15000):
         found_leaf_then = False
@@ -58,7 +58,7 @@ class TestPortal(TestElement):
                     self.test_stage = ResultCode.failure
                     self.is_live = False
                     self.message = result.message
-                    self.call_stack = self._build_simple_stack_message()
+                    self.call_stack_message = self._build_simple_stack_message()
                 elif result.result_code is ResultCode.success and isinstance(self.current_action, TestElement) \
                         and self.current_action.has_child:
                     self.current_action = self.current_action.next_action
@@ -67,15 +67,15 @@ class TestPortal(TestElement):
                     self.test_stage = ResultCode.success
                     self.is_live = False
                     self.message = result.message
-                    self.call_stack = self._build_simple_stack_message()
-            return TestResult(self.test_stage, self.message, self.call_stack)
+                    self.call_stack_message = self._build_simple_stack_message()
+            return TestResult(self.test_stage, self.message, self.call_stack_message)
         except:
             error_stack_trace = traceback.format_exc()
             self.is_live = False
             self.test_stage = ResultCode.failure
             self.message = f"{error_stack_trace}"
-            self.call_stack = self._build_simple_stack_message()
-            return TestResult(self.test_stage, self.message, self.call_stack)
+            self.call_stack_message = self._build_simple_stack_message()
+            return TestResult(self.test_stage, self.message, self.call_stack_message)
 
     def start_test(self, slack_user_workspace, data_store):
         ConsoleLogger.success(f"Running Test: {self.name}")
