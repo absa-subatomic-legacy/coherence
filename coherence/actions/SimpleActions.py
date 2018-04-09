@@ -1,7 +1,3 @@
-import json
-
-import requests
-
 from coherence.testing.Test import TestResult, ResultCode
 
 

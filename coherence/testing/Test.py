@@ -1,5 +1,6 @@
 import time
 from enum import Enum
+import traceback
 
 from coherence.logging.ConsoleLogging import ConsoleLogger
 
@@ -13,6 +14,7 @@ class TestElement(object):
         self.has_child = False
         self.start_time = 0
         self.is_started = False
+        self.call_stack_message = ""
 
     def then(self, next_action, timeout=15000):
         found_leaf_then = False
@@ -36,42 +38,65 @@ class TestPortal(TestElement):
         self.message = ResultCode.pending.name
         self.name = "Unnamed Test"
         self.data_store = {}
+        self.simple_call_stack = []
 
     def test(self, slack_users):
-        if self.is_live:
-            current_time = int(round(time.time() * 1000))
-            if not self.current_action.is_started:
-                self.current_action.is_started = True
-                self.current_action.start_time = current_time
-            if current_time - self.current_action.start_time > self.current_action.timeout:
-                self.current_action.test_stage = ResultCode.failure
-                result = TestResult(ResultCode.failure, "Time out occurred when calling {function_name}"
-                                    .format(function_name=self.current_action.run_element.__name__))
-            else:
-                result = self.current_action.run_element(slack_users, self.data_store)
-            if result.result_code is ResultCode.failure:
-                self.test_stage = ResultCode.failure
-                self.is_live = False
-                self.message = result.message
-            elif result.result_code is ResultCode.success and isinstance(self.current_action, TestElement) \
-                    and self.current_action.has_child:
-                self.current_action = self.current_action.next_action
-            elif result.result_code is ResultCode.success:
-                self.test_stage = ResultCode.success
-                self.is_live = False
-                self.message = result.message
-        return TestResult(self.test_stage, self.message)
+        # noinspection PyBroadException
+        try:
+            if self.is_live:
+                current_time = int(round(time.time() * 1000))
+                if not self.current_action.is_started:
+                    self.current_action.is_started = True
+                    self.current_action.start_time = current_time
+                if current_time - self.current_action.start_time > self.current_action.timeout:
+                    self.current_action.test_stage = ResultCode.failure
+                    result = TestResult(ResultCode.failure, "Time out occurred when calling {function_name}"
+                                        .format(function_name=self.current_action.run_element.__name__))
+                else:
+                    result = self.current_action.run_element(slack_users, self.data_store)
+                if result.result_code is ResultCode.failure:
+                    self.test_stage = ResultCode.failure
+                    self.is_live = False
+                    self.message = result.message
+                    self.call_stack_message = self._build_simple_stack_message()
+                elif result.result_code is ResultCode.success and isinstance(self.current_action, TestElement) \
+                        and self.current_action.has_child:
+                    self.current_action = self.current_action.next_action
+                    self._push_action_onto_stack(self.current_action)
+                elif result.result_code is ResultCode.success:
+                    self.test_stage = ResultCode.success
+                    self.is_live = False
+                    self.message = result.message
+                    self.call_stack_message = self._build_simple_stack_message()
+            return TestResult(self.test_stage, self.message, self.call_stack_message)
+        except:
+            error_stack_trace = traceback.format_exc()
+            self.is_live = False
+            self.test_stage = ResultCode.failure
+            self.message = f"{error_stack_trace}"
+            self.call_stack_message = self._build_simple_stack_message()
+            return TestResult(self.test_stage, self.message, self.call_stack_message)
 
     def start_test(self, slack_user_workspace, data_store):
         ConsoleLogger.success(f"Running Test: {self.name}")
         return TestResult(ResultCode.success)
 
+    def _push_action_onto_stack(self, current_action):
+        self.simple_call_stack += [current_action.run_element.__name__]
+
+    def _build_simple_stack_message(self):
+        message = self.name
+        for call in self.simple_call_stack:
+            message += "\n.then(" + call + ")"
+        return message
+
 
 class TestResult(object):
-    def __init__(self, result_code, message=""):
+    def __init__(self, result_code, message="", call_stack=""):
         self.result = result_code.name
         self.result_code = result_code
         self.message = message
+        self.call_stack = call_stack
 
 
 class ResultCode(Enum):
