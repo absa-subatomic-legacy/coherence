@@ -1,4 +1,5 @@
-# Coherence
+
+# Coherence [![Build Status](https://travis-ci.org/absa-subatomic/coherence.svg?branch=master)](https://travis-ci.org/absa-subatomic/coherence)
 Coherence is a python module designed to facilitate integration testing for ChatOps frameworks built using the
 [Slack Api](https://api.slack.com/) and is built around the 
 [python-slackclient](https://github.com/slackapi/python-slackclient). At it's core Coherence allows a developer to
