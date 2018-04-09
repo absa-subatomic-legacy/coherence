@@ -15,6 +15,11 @@ class ConsoleLogger(object):
         print(f"{Fore.RED}{message}{Style.RESET_ALL}")
 
     @staticmethod
+    def info(message):
+        logging.info(f"{message}\n")
+        print(f"{Fore.MAGENTA}{message}{Style.RESET_ALL}")
+
+    @staticmethod
     def log(message):
         logging.info(f"{message}\n")
         print(message)

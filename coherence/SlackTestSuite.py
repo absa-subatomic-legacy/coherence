@@ -19,9 +19,10 @@ class SlackTestSuite(object):
         self.log_file = log_file
         self._set_log_file(log_file, log_level)
         self.listen_after_tests = listen_after_tests
+        self.is_listening = False
 
     def run_tests(self):
-        ConsoleLogger.success(f"Running coherence test suite: {self.description}")
+        ConsoleLogger.info(f"Running coherence test suite: {self.description}")
         if not self._connect_clients():
             exit(1)
         run_tests = len(self.tests) > 0
@@ -30,6 +31,9 @@ class SlackTestSuite(object):
             self._process_current_test()
             self._clear_event_stores()
             run_tests = len(self.tests) > 0
+            if not run_tests and not self.is_listening and self.listen_after_tests:
+                ConsoleLogger.info("Coherence is now listening and logging the event stream.")
+                self.is_listening = True
 
     def add_slack_user(self, username, token):
         self.slack_user_workspace.add_slack_user_client(SlackUser(username, token))
@@ -79,21 +83,26 @@ class SlackTestSuite(object):
                     ConsoleLogger.success(f"Test passed: { current_test.name}")
                 else:
                     self.failed_tests += [current_test]
-
-                    ConsoleLogger.error(f"Test failed: {current_test.name} - {result.message}")
+                    message = f"{Fore.RED}Test failed: {Fore.LIGHTRED_EX}{current_test.name}" \
+                              f"\n{Fore.RED}Action Stack: {Fore.YELLOW}{result.call_stack}" \
+                              f"\n{Fore.RED}Result Message: {Fore.YELLOW}{result.message}{Style.RESET_ALL}"
+                    ConsoleLogger.log(message)
                 self.tests = self.tests[1:]
 
             if len(self.tests) == 0:
                 total_tests = str(len(self.successful_tests) + len(self.failed_tests))
 
-                summary = f"\n\n{Fore.GREEN}{str(len(self.successful_tests))}/{total_tests} " \
+                summary = f"\n\n{Fore.MAGENTA}Test Summary:\n" \
+                          f"{Fore.GREEN}{str(len(self.successful_tests))}/{total_tests} " \
                           f"tests passed\n{Style.RESET_ALL}"
                 for test in self.successful_tests:
                     summary += f"{Fore.GREEN}Test passed: {test.name}{Style.RESET_ALL}\n"
 
                 summary += f"\n{Fore.RED}{str(len(self.failed_tests))}/{total_tests} tests failed\n"
                 for test in self.failed_tests:
-                    summary += f"{Fore.RED}Test failed: {test.name} - {test.message}{Style.RESET_ALL}\n"
+                    summary += f"{Fore.RED}Test failed: {Fore.LIGHTRED_EX}{test.name}\n" \
+                               f"{Fore.RED}Action Stack: {Fore.YELLOW}{test.call_stack}\n" \
+                               f"{Fore.RED}Result Message: {Fore.YELLOW}{test.message}\n\n{Style.RESET_ALL}"
 
                 ConsoleLogger.log(summary)
 
@@ -119,7 +128,7 @@ class SlackTestSuite(object):
             handler.setLevel(log_level)
 
             # create a logging format
-            formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+            formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
             handler.setFormatter(formatter)
 
             # add the handlers to the logger
