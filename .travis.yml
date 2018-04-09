@@ -6,5 +6,5 @@ install:
   - pip install pytest pytest-cov
   - pip install codecov
 script:
-  - pytest test --cov=./
+  - pytest test --cov=./coherence
   - codecov
