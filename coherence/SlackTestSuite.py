@@ -22,7 +22,8 @@ class SlackTestSuite(object):
 
     def run_tests(self):
         ConsoleLogger.success(f"Running coherence test suite: {self.description}")
-        self._connect_clients()
+        if not self._connect_clients():
+            exit(1)
         run_tests = len(self.tests) > 0
         while run_tests or self.listen_after_tests:
             self._read_slack_events()
@@ -40,13 +41,19 @@ class SlackTestSuite(object):
     def _connect_clients(self):
         for slack_user in self.slack_user_workspace.slack_user_clients:
             if not slack_user.connect():
-                logging.error("{user} slack client failed to connect".format(user=slack_user.name))
-                exit(1)
+                logging.error("{user} slack client failed to connect".format(user=slack_user.username))
+                return False
 
         self._configure_workspace()
 
         for slack_user in self.slack_user_workspace.slack_user_clients:
-            slack_user.link_user_details(self.slack_user_workspace.workspace_user_details)
+            if not slack_user.link_user_details(self.slack_user_workspace.workspace_user_details):
+                return False
+
+            if slack_user.query_workspace_domain() is None:
+                return False
+
+        return True
 
     def _read_slack_events(self):
         self.new_events = False
@@ -95,8 +102,6 @@ class SlackTestSuite(object):
             slack_user.events = []
 
     def _configure_workspace(self):
-        self.slack_user_workspace.set_workspace_domain(
-            self.slack_user_workspace.slack_user_clients[0].query_workspace_domain())
         self.slack_user_workspace.set_workspace_user_details(
             self.slack_user_workspace.slack_user_clients[0].query_workspace_user_details())
         self.slack_user_workspace.set_workspace_channels(

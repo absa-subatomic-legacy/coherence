@@ -1,5 +1,7 @@
+import json
 import logging
 
+import requests
 from slackclient import SlackClient
 
 from coherence.logging.ConsoleLogging import ConsoleLogger
@@ -13,13 +15,14 @@ class SlackUser(object):
         self.slack_name = ""
         self.slack_id = ""
         self.events = []
+        self.domain = ""
 
     def connect(self):
         connection_result = self.client.rtm_connect()
         return connection_result
 
     def link_user_details(self, user_detail_list):
-        self._get_user_identity(user_detail_list)
+        return self._get_user_identity(user_detail_list)
 
     def send_message(self, destination, message, **kwargs):
         keyword_args = {k: v for k, v in kwargs.items() if v is not None}
@@ -102,6 +105,28 @@ class SlackUser(object):
             ConsoleLogger.error(f"Channel {channel_id} delete command failed as user {self.username}:{self.slack_id}")
         return result, response
 
+    def attachment_action(self, service_id, bot_user_id, actions, attachment_id, callback_id, channel_id, message_ts):
+        payload = {
+            "actions": actions,
+            "attachment_id": attachment_id,
+            "callback_id": callback_id,
+            "channel_id": channel_id,
+            "message_ts": message_ts
+        }
+        files = {
+            "payload": (None, json.dumps(payload)),
+            "service_id": (None, service_id),
+            "bot_user_id": (None, bot_user_id),
+            "token": (None, self.token)
+        }
+
+        request_url = f"https://{self.domain}.slack.com/api/chat.attachmentAction"
+        response = requests.post(request_url, files=files)
+        if response.status_code == 200:
+            return True, response
+        else:
+            return False, response
+
     def clear_event_store(self):
         self.events = []
 
@@ -110,6 +135,7 @@ class SlackUser(object):
         result = self.client.api_call("team.info")
         if result["ok"]:
             domain = result["team"]["domain"]
+            self.domain = domain
         # else throw error maybe?
         return domain
 
@@ -137,7 +163,7 @@ class SlackUser(object):
         if result["ok"]:
             channels_list += result["channels"]
         if "response_metadata" in result and "next_cursor" in result["response_metadata"]:
-            return channels_list + self.query_workspace_user_details(cursor=result["response_metadata"]["next_cursor"])
+            return channels_list + self.query_workspace_channels(cursor=result["response_metadata"]["next_cursor"])
         else:
             return channels_list
 
@@ -156,8 +182,8 @@ class SlackUser(object):
                 self.slack_id = user["id"]
                 logging.info("Associated slack id {slack_id} to username {username}".format(
                     slack_id=self.slack_id, username=self.username))
-                return
+                return True
         logging.error("No associated slack user details found for user {username}."
                       " List of available users:\n{userlist}"
                       .format(username=self.username, userlist=workspace_user_details))
-        exit(1)
+        return False

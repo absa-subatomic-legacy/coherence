@@ -8,7 +8,7 @@ class TestElement(object):
     def __init__(self, run_element, timeout=15000):
         self.test_stage = ResultCode.pending
         self.timeout = timeout
-        self.next_action = lambda slack_users: TestResult(1, "SUCCESS")
+        self.next_action = lambda slack_user_workspace, data_store: TestResult(ResultCode.success, "SUCCESS")
         self.run_element = run_element
         self.has_child = False
         self.start_time = 0

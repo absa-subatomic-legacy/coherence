@@ -1,7 +1,6 @@
 class SlackUserWorkspace(object):
     def __init__(self):
         self.slack_user_clients = []
-        self.workspace_domain = ""
         self.workspace_user_details = []
         self.workspace_channels = []
         self.workspace_groups = []
@@ -14,9 +13,6 @@ class SlackUserWorkspace(object):
 
     def set_workspace_groups(self, workspace_groups):
         self.workspace_groups = workspace_groups
-
-    def set_workspace_domain(self, workspace_domain):
-        self.workspace_domain = workspace_domain
 
     def find_user_by_username(self, username):
         for user in self.workspace_user_details:
