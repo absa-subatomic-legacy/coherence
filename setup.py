@@ -14,7 +14,7 @@ def find_packages(base_package):
 
 setup(
     name='subatomic_coherence',
-    version='0.1.1rc3',
+    version='0.1.1',
     packages=find_packages("subatomic_coherence"),
     url='https://github.com/absa-subatomic/subatomic_coherence',
     license='Apache License 2.0',
