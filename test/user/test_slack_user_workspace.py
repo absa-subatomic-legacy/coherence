@@ -1,5 +1,5 @@
-from coherence.user.SlackUser import SlackUser
-from coherence.user.SlackUserWorkspace import SlackUserWorkspace
+from coherence.user.slack_user import SlackUser
+from coherence.user.slack_user_workspace import SlackUserWorkspace
 
 
 def test_find_user_by_username_expect_success():

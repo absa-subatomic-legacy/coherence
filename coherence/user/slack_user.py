@@ -4,7 +4,7 @@ import logging
 import requests
 from slackclient import SlackClient
 
-from coherence.logging.ConsoleLogging import ConsoleLogger
+from coherence.logging.console_logging import ConsoleLogger
 
 
 class SlackUser(object):

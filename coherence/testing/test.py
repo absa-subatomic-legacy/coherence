@@ -2,7 +2,7 @@ import time
 from enum import Enum
 import traceback
 
-from coherence.logging.ConsoleLogging import ConsoleLogger
+from coherence.logging.console_logging import ConsoleLogger
 
 
 class TestElement(object):

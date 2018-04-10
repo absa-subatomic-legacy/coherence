@@ -1,7 +1,7 @@
 from unittest.mock import MagicMock
 
-from coherence.SlackTestSuite import SlackTestSuite
-from coherence.testing.Test import TestPortal, TestResult, ResultCode
+from coherence.slack_test_suite import SlackTestSuite
+from coherence.testing.test import TestPortal, TestResult, ResultCode
 
 
 def test_add_slack_test_expect_added_to_test_list():
