@@ -2,7 +2,7 @@ from unittest import mock
 from unittest.mock import MagicMock
 
 from coherence.user.slack_user import SlackUser
-from test.mocking.mocking import MockRequestsResponse
+from testing.mocking.mocking import MockRequestsResponse
 
 
 def test_user_connect_expect_success():
