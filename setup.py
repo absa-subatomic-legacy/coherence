@@ -18,5 +18,10 @@ setup(
     packages=find_packages("coherence"),
     url='https://github.com/absa-subatomic/coherence',
     license='Apache License 2.0',
-    description='A Slack integration testing framework'
+    description='A Slack integration testing framework',
+    install_requires=[
+          'colorama',
+          'requests',
+          'slackclient',
+      ]
 )
