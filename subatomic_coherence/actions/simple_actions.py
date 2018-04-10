@@ -209,8 +209,11 @@ def expect_channel_created(user, channel_name):
 def delete_channel(as_user, channel_name):
     def delete_channel_function(slack_user_workspace, data_store):
         as_user_client = slack_user_workspace.find_user_client_by_username(as_user)
-        as_user_client.delete_channel(slack_user_workspace.find_channel_by_name(channel_name)["id"])
-        return TestResult(ResultCode.success)
+        result, response = as_user_client.delete_channel(slack_user_workspace.find_channel_by_name(channel_name)["id"])
+        test_result = TestResult(ResultCode.success)
+        if result is False:
+            test_result = TestResult(ResultCode.failure, response["error"])
+        return test_result
 
     return delete_channel_function
 

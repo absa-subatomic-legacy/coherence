@@ -1,5 +1,6 @@
 import json
 import logging
+from time import sleep, time
 
 import requests
 from slackclient import SlackClient
@@ -16,6 +17,9 @@ class SlackUser(object):
         self.slack_id = ""
         self.events = []
         self.domain = ""
+        self.rate_limiters = {
+            self.delete_channel.__name__: RateLimiter(1, 10000)
+        }
 
     def connect(self):
         connection_result = self.client.rtm_connect()
@@ -94,10 +98,19 @@ class SlackUser(object):
         return result, response
 
     def delete_channel(self, channel_id):
+        rate_limiter = self.rate_limiters[self.delete_channel.__name__]
+
+        wait_time = rate_limiter.wait_time()/1000
+        if wait_time > 0:
+            sleep(wait_time)
+
         response = self.client.api_call(
             "channels.delete",
             channel=channel_id
         )
+
+        rate_limiter.log_call()
+
         result = response["ok"]
         if result is True:
             logging.info(f"Channel {channel_id} deleted successfully.")
@@ -187,3 +200,31 @@ class SlackUser(object):
                       " List of available users:\n{userlist}"
                       .format(username=self.username, userlist=workspace_user_details))
         return False
+
+
+class RateLimiter(object):
+    def __init__(self, count, time_period):
+        self.count = count
+        self.time_period = time_period
+        self.calls = []
+        self.current_milli_time = lambda: int(round(time() * 1000))
+
+    def can_call(self):
+        self.prune()
+        return len(self.calls) < self.count
+
+    def wait_time(self):
+        self.prune()
+        if len(self.calls) > 0:
+            return self.time_period - (self.current_milli_time() - self.calls[0])
+        return 0
+
+    def prune(self):
+        valid_calls = []
+        for call in self.calls:
+            if self.current_milli_time() - call < self.time_period:
+                valid_calls += [call]
+        self.calls = valid_calls
+
+    def log_call(self):
+        self.calls += [self.current_milli_time()]
