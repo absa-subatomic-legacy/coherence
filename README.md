@@ -69,7 +69,7 @@ elements are added to the chain by invoking the `then` command. `TestElement.the
      chain. It can be used to store data that will be used by later steps in the chain.  
 - return - The function must return a [`TestResult`](coherence/testing/test.py) indicating whether the test is successful, unsuccessful, or pending.
 
-Examples of these test actions can be found in the [`simple_actions`](coherence/actions/simple_actions.py) python module. The `SimpleActions` module
+Examples of these test actions can be found in the [`simple_actions`](coherence/actions/simple_actions.py) python module. The `simple_actions` module
 additionally provides a number of re-usable testing steps. A few simple examples are shown here.
 
 ### Send Message To User
