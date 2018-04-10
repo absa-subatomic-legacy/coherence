@@ -5,7 +5,7 @@ import coherence.actions.simple_actions as SimpleActions
 from coherence.testing.test import ResultCode
 from coherence.user.slack_user import SlackUser
 from coherence.user.slack_user_workspace import SlackUserWorkspace
-from test.mocking.mocking import MockRequestsResponse
+from testing.mocking.mocking import MockRequestsResponse
 
 
 def test_expect_message_with_simple_message_from_user_expect_event_returned():
