@@ -13,7 +13,7 @@ def find_packages(base_package):
     return packages
 
 setup(
-    name='subatomic-coherence',
+    name='subatomic_coherence',
     version='0.1.0',
     packages=find_packages("coherence"),
     url='https://github.com/absa-subatomic/coherence',
