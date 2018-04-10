@@ -1,7 +1,7 @@
 from unittest import mock
 from unittest.mock import MagicMock
 
-from coherence.user.SlackUser import SlackUser
+from coherence.user.slack_user import SlackUser
 from test.mocking.mocking import MockRequestsResponse
 
 
@@ -173,7 +173,7 @@ def _mock_attachment_action_post(*args, **kwargs):
     return MockRequestsResponse({"files": kwargs["files"], "url": args[0]}, 200)
 
 
-@mock.patch('coherence.user.SlackUser.requests.post', side_effect=_mock_attachment_action_post)
+@mock.patch('coherence.user.slack_user.requests.post', side_effect=_mock_attachment_action_post)
 def test_attachment_action_expect_body_and_url_correctly_formed(mock_post):
     user = SlackUser("user", "token")
     user.domain = "adomain"

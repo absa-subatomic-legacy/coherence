@@ -16,7 +16,7 @@ slack workspace for testing purposes specifically. This eliminates background ev
 writing tests harder and conversely tests could contaminate important slack workspaces.
 
 The main controller for the integration tests is the 
-[SlackTestSuite](coherence/SlackTestSuite.py). The constructor
+[SlackTestSuite](coherence/slack_test_suite.py). The constructor
 can be called as such:
 ```python
 test_suite = SlackTestSuite(description="Test suite description", log_file="log_file.log", log_level=logging.INFO,
@@ -62,14 +62,14 @@ All tests are defined as a series of steps added to a testing chain. The chain s
 elements are added to the chain by invoking the `then` command. `TestElement.then(next_action)` takes a parameter 
 `next_action` which is a function of the form
 - arguments
-    - `slack_user_workspace` - this will contain a reference to the [`SlackUserWorkspace`](coherence/user/SlackUserWorkspace.py) instance for the current test
+    - `slack_user_workspace` - this will contain a reference to the [`SlackUserWorkspace`](coherence/user/slack_user_workspace.py) instance for the current test
     suite. It provides access to details such as existing users, groups, and channels metadata along with access to the
     slack users added to the test suite clients (used to send, receive, listen etc to messages for the associated user).
     - `data_store` - this is a simple python dictionary that persists any data stored in it for the duration of the test
      chain. It can be used to store data that will be used by later steps in the chain.  
-- return - The function must return a [`TestResult`](coherence/testing/Test.py) indicating whether the test is successful, unsuccessful, or pending.
+- return - The function must return a [`TestResult`](coherence/testing/test.py) indicating whether the test is successful, unsuccessful, or pending.
 
-Examples of these test actions can be found in the [`SimpleActions`](coherence/actions/SimpleActions.py) python module. The `SimpleActions` module
+Examples of these test actions can be found in the [`simple_actions`](coherence/actions/simple_actions.py) python module. The `simple_actions` module
 additionally provides a number of re-usable testing steps. A few simple examples are shown here.
 
 ### Send Message To User

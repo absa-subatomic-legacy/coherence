@@ -1,6 +1,6 @@
 import time
 
-from coherence.testing.Test import TestPortal, ResultCode, TestResult, TestElement
+from coherence.testing.test import TestPortal, ResultCode, TestResult, TestElement
 
 
 def test_test_portal_test_simple_expect_success():

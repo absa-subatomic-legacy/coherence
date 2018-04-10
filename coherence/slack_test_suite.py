@@ -2,10 +2,10 @@ import logging
 import json
 from colorama import Fore, Style
 
-from coherence.logging.ConsoleLogging import ConsoleLogger
-from coherence.testing.Test import ResultCode
-from coherence.user.SlackUser import SlackUser
-from coherence.user.SlackUserWorkspace import SlackUserWorkspace
+from coherence.logging.console_logging import ConsoleLogger
+from coherence.testing.test import ResultCode
+from coherence.user.slack_user import SlackUser
+from coherence.user.slack_user_workspace import SlackUserWorkspace
 
 
 class SlackTestSuite(object):
