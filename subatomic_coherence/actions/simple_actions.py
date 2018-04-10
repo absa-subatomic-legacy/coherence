@@ -1,4 +1,4 @@
-from coherence.testing.test import TestResult, ResultCode
+from subatomic_coherence.testing.test import TestResult, ResultCode
 
 
 def _expect_message(to_user_client,

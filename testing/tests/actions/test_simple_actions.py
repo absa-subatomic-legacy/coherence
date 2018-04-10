@@ -1,10 +1,10 @@
 from unittest import mock
 from unittest.mock import MagicMock
 
-import coherence.actions.simple_actions as SimpleActions
-from coherence.testing.test import ResultCode
-from coherence.user.slack_user import SlackUser
-from coherence.user.slack_user_workspace import SlackUserWorkspace
+import subatomic_coherence.actions.simple_actions as SimpleActions
+from subatomic_coherence.testing.test import ResultCode
+from subatomic_coherence.user.slack_user import SlackUser
+from subatomic_coherence.user.slack_user_workspace import SlackUserWorkspace
 from testing.mocking.mocking import MockRequestsResponse
 
 
@@ -216,7 +216,7 @@ def test_send_message_to_channel_simple_expect_success():
 
 
 def test_expect_message_from_user_simple_message_expect_success():
-    import coherence.actions.simple_actions as MockableSimpleActions
+    import subatomic_coherence.actions.simple_actions as MockableSimpleActions
     expect_message_function = MockableSimpleActions.expect_message_from_user("user1", "user2")
     slack_user_workspace = SlackUserWorkspace()
     user1 = SlackUser("user1", "token")
@@ -234,7 +234,7 @@ def test_expect_message_from_user_simple_message_expect_success():
 
 
 def test_expect_message_from_user_store_thread_ts_expect_success():
-    import coherence.actions.simple_actions as MockableSimpleActions
+    import subatomic_coherence.actions.simple_actions as MockableSimpleActions
     expect_message_function = MockableSimpleActions.expect_message_from_user("user1", "user2",
                                                                              thread_ts_name="my_thread")
     slack_user_workspace = SlackUserWorkspace()
@@ -258,7 +258,7 @@ def test_expect_message_from_user_with_validator_expect_pending():
     def validator(message):
         return False
 
-    import coherence.actions.simple_actions as MockableSimpleActions
+    import subatomic_coherence.actions.simple_actions as MockableSimpleActions
 
     expect_message_function = MockableSimpleActions.expect_message_from_user("user1", "user2", validators=[validator])
     slack_user_workspace = SlackUserWorkspace()
@@ -280,7 +280,7 @@ def test_expect_and_store_action_message_with_validator_expect_failure():
     def validator(message):
         return False
 
-    import coherence.actions.simple_actions as MockableSimpleActions
+    import subatomic_coherence.actions.simple_actions as MockableSimpleActions
 
     expect_action_function = MockableSimpleActions.expect_and_store_action_message("user1", "user2", "my_action",
                                                                                    validators=[validator])
@@ -443,7 +443,7 @@ def test_invite_user_to_channel_public_channel_expect_success():
     def mocked_invite_to_channel(user_id, channel_id):
         return True, {"ok": True}
 
-    import coherence.actions.simple_actions as MockableSimpleActions
+    import subatomic_coherence.actions.simple_actions as MockableSimpleActions
 
     MockableSimpleActions._try_get_channel_id = MagicMock(return_value="G123456")
 
@@ -462,7 +462,7 @@ def test_invite_user_to_channel_public_channel_expect_failure():
     def mocked_invite_to_channel(user_id, channel_id):
         return False, {"ok": False, "error": "ERROR_MESSAGE"}
 
-    import coherence.actions.simple_actions as MockableSimpleActions
+    import subatomic_coherence.actions.simple_actions as MockableSimpleActions
 
     MockableSimpleActions._try_get_channel_id = MagicMock(return_value="G123456")
 
@@ -482,7 +482,7 @@ def test_invite_user_to_channel_private_channel_expect_success():
     def mocked_invite_to_channel(user_id, channel_id):
         return True, {"ok": True}
 
-    import coherence.actions.simple_actions as MockableSimpleActions
+    import subatomic_coherence.actions.simple_actions as MockableSimpleActions
 
     MockableSimpleActions._try_get_channel_id = MagicMock(return_value="G123456")
 
@@ -501,7 +501,7 @@ def test_kick_user_to_channel_public_channel_expect_success():
     def mocked_kick_from_channel(user_id, channel_id):
         return True, {"ok": True}
 
-    import coherence.actions.simple_actions as MockableSimpleActions
+    import subatomic_coherence.actions.simple_actions as MockableSimpleActions
 
     MockableSimpleActions._try_get_channel_id = MagicMock(return_value="G123456")
 
@@ -520,7 +520,7 @@ def test_kick_user_to_channel_public_channel_expect_failure():
     def mocked_kick_from_channel(user_id, channel_id):
         return False, {"ok": False, "error": "ERROR_MESSAGE"}
 
-    import coherence.actions.simple_actions as MockableSimpleActions
+    import subatomic_coherence.actions.simple_actions as MockableSimpleActions
 
     MockableSimpleActions._try_get_channel_id = MagicMock(return_value="G123456")
 
@@ -540,7 +540,7 @@ def test_kick_user_to_channel_private_channel_expect_success():
     def mocked_kick_from_channel(user_id, channel_id):
         return True, {"ok": True}
 
-    import coherence.actions.simple_actions as MockableSimpleActions
+    import subatomic_coherence.actions.simple_actions as MockableSimpleActions
 
     MockableSimpleActions._try_get_channel_id = MagicMock(return_value="G123456")
 

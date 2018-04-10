@@ -14,9 +14,9 @@ def find_packages(base_package):
 
 setup(
     name='subatomic_coherence',
-    version='0.1.0',
-    packages=find_packages("coherence"),
-    url='https://github.com/absa-subatomic/coherence',
+    version='0.1.1rc3',
+    packages=find_packages("subatomic_coherence"),
+    url='https://github.com/absa-subatomic/subatomic_coherence',
     license='Apache License 2.0',
     description='A Slack integration testing framework',
     install_requires=[

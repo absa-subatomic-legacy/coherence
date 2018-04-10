@@ -2,10 +2,10 @@ import logging
 import json
 from colorama import Fore, Style
 
-from coherence.logging.console_logging import ConsoleLogger
-from coherence.testing.test import ResultCode
-from coherence.user.slack_user import SlackUser
-from coherence.user.slack_user_workspace import SlackUserWorkspace
+from subatomic_coherence.logging.console_logging import ConsoleLogger
+from subatomic_coherence.testing.test import ResultCode
+from subatomic_coherence.user.slack_user import SlackUser
+from subatomic_coherence.user.slack_user_workspace import SlackUserWorkspace
 
 
 class SlackTestSuite(object):
@@ -22,7 +22,7 @@ class SlackTestSuite(object):
         self.is_listening = False
 
     def run_tests(self):
-        ConsoleLogger.info(f"Running coherence test suite: {self.description}")
+        ConsoleLogger.info(f"Running subatomic_coherence test suite: {self.description}")
         if not self._connect_clients():
             exit(1)
         run_tests = len(self.tests) > 0
