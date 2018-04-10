@@ -7,9 +7,15 @@ control the actions of various Slack users via scripted commands and listen to e
 workspace.
 
 ## Getting Started
-Currently in this early development stage the only way to use the module is to use it directly via the source and 
-importing this into your testing project. There are plans to put the module on 
-[PyPi](https://github.com/absa-subatomic/coherence/issues/2) in the near future.
+Start by installing coherence:
+```
+pip install subatomic_coherence
+```
+
+Coherence can then be imported using
+```python
+import subatomic_coherence
+```
 
 Coherence uses slack tokens for users to control their actions. It is usually a good idea to create an isolated
 slack workspace for testing purposes specifically. This eliminates background event in the workspace which could make 
