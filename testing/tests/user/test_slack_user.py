@@ -1,7 +1,7 @@
 from unittest import mock
 from unittest.mock import MagicMock
 
-from subatomic_coherence.user.slack_user import SlackUser
+from subatomic_coherence.user.slack_user import SlackUser, RateLimiter
 from testing.mocking.mocking import MockRequestsResponse
 
 
@@ -188,3 +188,47 @@ def test_attachment_action_expect_body_and_url_correctly_formed(mock_post):
     assert response.json_data["files"]["token"][1] == "token"
     assert response.status_code == 200
     assert result is True
+
+
+def test_rate_limiter_log_call_expect_call_logged():
+    limiter = RateLimiter(2, 100000)
+    limiter.current_milli_time = lambda: 0
+    limiter.log_call()
+    assert limiter.calls[0] == 0
+    limiter.current_milli_time = lambda: 5
+    limiter.log_call()
+    assert limiter.calls[1] == 5
+
+
+def test_rate_limiter_prune_expect_non_expired_calls_pruned():
+    limiter = RateLimiter(2, 10)
+    limiter.current_milli_time = lambda: 0
+    limiter.log_call()
+    limiter.current_milli_time = lambda: 8
+    limiter.log_call()
+    limiter.current_milli_time = lambda: 15
+    limiter.prune()
+    assert limiter.calls[0] == 8
+    assert len(limiter.calls) == 1
+
+
+def test_rate_limiter_where_not_exceeding_count_expect_success():
+    limiter = RateLimiter(2, 100000)
+    limiter.log_call()
+    assert limiter.can_call() is True
+
+
+def test_rate_limiter_where_exceeding_count_expect_cannot_call():
+    limiter = RateLimiter(1, 100000)
+    limiter.log_call()
+    assert limiter.can_call() is False
+
+
+def test_rate_limiter_where_exceeding_count_expect_wait_time_correct():
+    limiter = RateLimiter(1, 10)
+    limiter.current_milli_time = lambda: 0
+    limiter.log_call()
+    # pretend 5 milliseconds have passed
+    limiter.current_milli_time = lambda: 5
+    assert limiter.can_call() is False
+    assert limiter.wait_time() == 5
