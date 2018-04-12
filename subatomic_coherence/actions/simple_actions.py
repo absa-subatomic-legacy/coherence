@@ -65,7 +65,7 @@ def send_message_to_user(from_user_slack_name,
                          message,
                          thread_ts=None,
                          thread_ts_name=None):
-    def send_message_function(slack_user_workspace, data_store):
+    def send_message_to_user_function(slack_user_workspace, data_store):
         user_sender = slack_user_workspace.find_user_client_by_username(from_user_slack_name)
         user_receiver_details = slack_user_workspace.find_user_by_username(to_user_slack_name)
         actual_thread_ts = thread_ts
@@ -74,7 +74,7 @@ def send_message_to_user(from_user_slack_name,
         user_sender.send_message(user_receiver_details["id"], message, thread_ts=actual_thread_ts)
         return TestResult(ResultCode.success)
 
-    return send_message_function
+    return send_message_to_user_function
 
 
 def send_message_to_channel(from_user_slack_name,
@@ -82,7 +82,7 @@ def send_message_to_channel(from_user_slack_name,
                             message,
                             thread_ts=None,
                             thread_ts_name=None):
-    def send_message_function(slack_user_workspace, data_store):
+    def send_message_to_channel_function(slack_user_workspace, data_store):
         user_sender = slack_user_workspace.find_user_client_by_username(from_user_slack_name)
         channel_details = slack_user_workspace.find_channel_by_name(channel_name)
         actual_thread_ts = thread_ts
@@ -91,7 +91,7 @@ def send_message_to_channel(from_user_slack_name,
         user_sender.send_message(channel_details["id"], message, thread_ts=actual_thread_ts)
         return TestResult(ResultCode.success)
 
-    return send_message_function
+    return send_message_to_channel_function
 
 
 def expect_message_from_user(from_user_slack_name,
@@ -209,8 +209,11 @@ def expect_channel_created(user, channel_name):
 def delete_channel(as_user, channel_name):
     def delete_channel_function(slack_user_workspace, data_store):
         as_user_client = slack_user_workspace.find_user_client_by_username(as_user)
-        as_user_client.delete_channel(slack_user_workspace.find_channel_by_name(channel_name)["id"])
-        return TestResult(ResultCode.success)
+        result, response = as_user_client.delete_channel(slack_user_workspace.find_channel_by_name(channel_name)["id"])
+        test_result = TestResult(ResultCode.success)
+        if result is False:
+            test_result = TestResult(ResultCode.failure, response["error"])
+        return test_result
 
     return delete_channel_function
 

@@ -8,6 +8,11 @@ from subatomic_coherence.user.slack_user_workspace import SlackUserWorkspace
 from testing.mocking.mocking import MockRequestsResponse
 
 
+def mockable_simple_actions():
+    import subatomic_coherence.actions.simple_actions as MockableSimpleActions
+    return MockableSimpleActions
+
+
 def test_expect_message_with_simple_message_from_user_expect_event_returned():
     user = SlackUser("user", "token")
     expected_event = {
@@ -216,38 +221,38 @@ def test_send_message_to_channel_simple_expect_success():
 
 
 def test_expect_message_from_user_simple_message_expect_success():
-    import subatomic_coherence.actions.simple_actions as MockableSimpleActions
-    expect_message_function = MockableSimpleActions.expect_message_from_user("user1", "user2")
+    simple_actions = mockable_simple_actions()
+    expect_message_function = simple_actions.expect_message_from_user("user1", "user2")
     slack_user_workspace = SlackUserWorkspace()
     user1 = SlackUser("user1", "token")
     slack_user_workspace.find_user_client_by_username = MagicMock(return_value=user1)
     slack_user_workspace.find_user_by_username = MagicMock(return_value={"id": "U222222"})
-    MockableSimpleActions._expect_message = MagicMock(return_value={
+    simple_actions._expect_message = MagicMock(return_value={
         "type": "message",
         "user": "U2222222",
         "text": "some text"
     })
-    MockableSimpleActions._try_get_channel_id = MagicMock(return_value=None)
+    simple_actions._try_get_channel_id = MagicMock(return_value=None)
 
     result = expect_message_function(slack_user_workspace, {})
     assert result.result_code == ResultCode.success
 
 
 def test_expect_message_from_user_store_thread_ts_expect_success():
-    import subatomic_coherence.actions.simple_actions as MockableSimpleActions
-    expect_message_function = MockableSimpleActions.expect_message_from_user("user1", "user2",
-                                                                             thread_ts_name="my_thread")
+    simple_actions = mockable_simple_actions()
+    expect_message_function = simple_actions.expect_message_from_user("user1", "user2",
+                                                                      thread_ts_name="my_thread")
     slack_user_workspace = SlackUserWorkspace()
     user1 = SlackUser("user1", "token")
     slack_user_workspace.find_user_client_by_username = MagicMock(return_value=user1)
     slack_user_workspace.find_user_by_username = MagicMock(return_value={"id": "U222222"})
-    MockableSimpleActions._expect_message = MagicMock(return_value={
+    simple_actions._expect_message = MagicMock(return_value={
         "type": "message",
         "user": "U2222222",
         "text": "some text",
         "thread_ts": "1000"
     })
-    MockableSimpleActions._try_get_channel_id = MagicMock(return_value=None)
+    simple_actions._try_get_channel_id = MagicMock(return_value=None)
     data_store = {}
     result = expect_message_function(slack_user_workspace, data_store)
     assert result.result_code == ResultCode.success
@@ -258,19 +263,19 @@ def test_expect_message_from_user_with_validator_expect_pending():
     def validator(message):
         return False
 
-    import subatomic_coherence.actions.simple_actions as MockableSimpleActions
+    simple_actions = mockable_simple_actions()
 
-    expect_message_function = MockableSimpleActions.expect_message_from_user("user1", "user2", validators=[validator])
+    expect_message_function = simple_actions.expect_message_from_user("user1", "user2", validators=[validator])
     slack_user_workspace = SlackUserWorkspace()
     user1 = SlackUser("user1", "token")
     slack_user_workspace.find_user_client_by_username = MagicMock(return_value=user1)
     slack_user_workspace.find_user_by_username = MagicMock(return_value={"id": "U222222"})
-    MockableSimpleActions._expect_message = MagicMock(return_value={
+    simple_actions._expect_message = MagicMock(return_value={
         "type": "message",
         "user": "U2222222",
         "text": "some text"
     })
-    MockableSimpleActions._try_get_channel_id = MagicMock(return_value=None)
+    simple_actions._try_get_channel_id = MagicMock(return_value=None)
     data_store = {}
     result = expect_message_function(slack_user_workspace, data_store)
     assert result.result_code == ResultCode.pending
@@ -280,10 +285,10 @@ def test_expect_and_store_action_message_with_validator_expect_failure():
     def validator(message):
         return False
 
-    import subatomic_coherence.actions.simple_actions as MockableSimpleActions
+    simple_actions = mockable_simple_actions()
 
-    expect_action_function = MockableSimpleActions.expect_and_store_action_message("user1", "user2", "my_action",
-                                                                                   validators=[validator])
+    expect_action_function = simple_actions.expect_and_store_action_message("user1", "user2", "my_action",
+                                                                            validators=[validator])
     slack_user_workspace = SlackUserWorkspace()
     user2 = SlackUser("user2", "token")
     slack_user_workspace.find_user_client_by_username = MagicMock(return_value=user2)
@@ -300,7 +305,7 @@ def test_expect_and_store_action_message_with_validator_expect_failure():
             }
         ]
     }
-    MockableSimpleActions._try_get_channel_id = MagicMock(return_value=None)
+    simple_actions._try_get_channel_id = MagicMock(return_value=None)
     user2.events = [expected_event]
     data_store = {}
     result = expect_action_function(slack_user_workspace, data_store)
@@ -439,13 +444,38 @@ def test_expect_channel_created_expect_pending_result():
     assert result.result_code == ResultCode.pending
 
 
+def test_delete_channel_expect_success():
+    user1 = SlackUser("user", "token")
+    slack_user_workspace = SlackUserWorkspace()
+    slack_user_workspace.find_user_client_by_username = MagicMock(return_value=user1)
+    slack_user_workspace.find_channel_by_name = MagicMock(return_value={"id": "G123456"})
+    user1.delete_channel = MagicMock(return_value=(True, {"ok": True}))
+
+    delete_channel_function = SimpleActions.delete_channel("user1", "channel1")
+    result = delete_channel_function(slack_user_workspace, {})
+    assert result.result_code == ResultCode.success
+
+
+def test_delete_channel_expect_failure():
+    user1 = SlackUser("user", "token")
+    slack_user_workspace = SlackUserWorkspace()
+    slack_user_workspace.find_user_client_by_username = MagicMock(return_value=user1)
+    slack_user_workspace.find_channel_by_name = MagicMock(return_value={"id": "G123456"})
+    user1.delete_channel = MagicMock(return_value=(False, {"ok": False, "error": "ERROR"}))
+
+    delete_channel_function = SimpleActions.delete_channel("user1", "channel1")
+    result = delete_channel_function(slack_user_workspace, {})
+    assert result.result_code == ResultCode.failure
+    assert result.message == "ERROR"
+
+
 def test_invite_user_to_channel_public_channel_expect_success():
     def mocked_invite_to_channel(user_id, channel_id):
         return True, {"ok": True}
 
-    import subatomic_coherence.actions.simple_actions as MockableSimpleActions
+    simple_actions = mockable_simple_actions()
 
-    MockableSimpleActions._try_get_channel_id = MagicMock(return_value="G123456")
+    simple_actions._try_get_channel_id = MagicMock(return_value="G123456")
 
     user1 = SlackUser("user1", "token")
     user1.invite_to_channel = mocked_invite_to_channel
@@ -453,7 +483,7 @@ def test_invite_user_to_channel_public_channel_expect_success():
     slack_user_workspace.find_user_client_by_username = MagicMock(return_value=user1)
     slack_user_workspace.find_user_by_username = MagicMock(return_value={"id": "U222222"})
 
-    invite_user_to_channel = SimpleActions.invite_user_to_channel("user1", "user2", "some_channel")
+    invite_user_to_channel = simple_actions.invite_user_to_channel("user1", "user2", "some_channel")
     result = invite_user_to_channel(slack_user_workspace, {})
     assert result.result_code == ResultCode.success
 
@@ -462,9 +492,9 @@ def test_invite_user_to_channel_public_channel_expect_failure():
     def mocked_invite_to_channel(user_id, channel_id):
         return False, {"ok": False, "error": "ERROR_MESSAGE"}
 
-    import subatomic_coherence.actions.simple_actions as MockableSimpleActions
+    simple_actions = mockable_simple_actions()
 
-    MockableSimpleActions._try_get_channel_id = MagicMock(return_value="G123456")
+    simple_actions._try_get_channel_id = MagicMock(return_value="G123456")
 
     user1 = SlackUser("user1", "token")
     user1.invite_to_channel = mocked_invite_to_channel
@@ -472,7 +502,7 @@ def test_invite_user_to_channel_public_channel_expect_failure():
     slack_user_workspace.find_user_client_by_username = MagicMock(return_value=user1)
     slack_user_workspace.find_user_by_username = MagicMock(return_value={"id": "U222222"})
 
-    invite_user_to_channel = SimpleActions.invite_user_to_channel("user1", "user2", "some_channel")
+    invite_user_to_channel = simple_actions.invite_user_to_channel("user1", "user2", "some_channel")
     result = invite_user_to_channel(slack_user_workspace, {})
     assert result.result_code == ResultCode.failure
     assert result.message == "ERROR_MESSAGE"
@@ -482,9 +512,9 @@ def test_invite_user_to_channel_private_channel_expect_success():
     def mocked_invite_to_channel(user_id, channel_id):
         return True, {"ok": True}
 
-    import subatomic_coherence.actions.simple_actions as MockableSimpleActions
+    simple_actions = mockable_simple_actions()
 
-    MockableSimpleActions._try_get_channel_id = MagicMock(return_value="G123456")
+    simple_actions._try_get_channel_id = MagicMock(return_value="G123456")
 
     user1 = SlackUser("user1", "token")
     user1.invite_to_group = mocked_invite_to_channel
@@ -492,7 +522,7 @@ def test_invite_user_to_channel_private_channel_expect_success():
     slack_user_workspace.find_user_client_by_username = MagicMock(return_value=user1)
     slack_user_workspace.find_user_by_username = MagicMock(return_value={"id": "U222222"})
 
-    invite_user_to_channel = SimpleActions.invite_user_to_channel("user1", "user2", "some_channel", is_private=True)
+    invite_user_to_channel = simple_actions.invite_user_to_channel("user1", "user2", "some_channel", is_private=True)
     result = invite_user_to_channel(slack_user_workspace, {})
     assert result.result_code == ResultCode.success
 
@@ -501,9 +531,9 @@ def test_kick_user_to_channel_public_channel_expect_success():
     def mocked_kick_from_channel(user_id, channel_id):
         return True, {"ok": True}
 
-    import subatomic_coherence.actions.simple_actions as MockableSimpleActions
+    simple_actions = mockable_simple_actions()
 
-    MockableSimpleActions._try_get_channel_id = MagicMock(return_value="G123456")
+    simple_actions._try_get_channel_id = MagicMock(return_value="G123456")
 
     user1 = SlackUser("user1", "token")
     user1.kick_from_channel = mocked_kick_from_channel
@@ -511,7 +541,7 @@ def test_kick_user_to_channel_public_channel_expect_success():
     slack_user_workspace.find_user_client_by_username = MagicMock(return_value=user1)
     slack_user_workspace.find_user_by_username = MagicMock(return_value={"id": "U222222"})
 
-    kick_user_from_channel = SimpleActions.kick_user_from_channel("user1", "user2", "some_channel")
+    kick_user_from_channel = simple_actions.kick_user_from_channel("user1", "user2", "some_channel")
     result = kick_user_from_channel(slack_user_workspace, {})
     assert result.result_code == ResultCode.success
 
@@ -520,9 +550,9 @@ def test_kick_user_to_channel_public_channel_expect_failure():
     def mocked_kick_from_channel(user_id, channel_id):
         return False, {"ok": False, "error": "ERROR_MESSAGE"}
 
-    import subatomic_coherence.actions.simple_actions as MockableSimpleActions
+    simple_actions = mockable_simple_actions()
 
-    MockableSimpleActions._try_get_channel_id = MagicMock(return_value="G123456")
+    simple_actions._try_get_channel_id = MagicMock(return_value="G123456")
 
     user1 = SlackUser("user1", "token")
     user1.kick_from_channel = mocked_kick_from_channel
@@ -530,7 +560,7 @@ def test_kick_user_to_channel_public_channel_expect_failure():
     slack_user_workspace.find_user_client_by_username = MagicMock(return_value=user1)
     slack_user_workspace.find_user_by_username = MagicMock(return_value={"id": "U222222"})
 
-    kick_user_from_channel = SimpleActions.kick_user_from_channel("user1", "user2", "some_channel")
+    kick_user_from_channel = simple_actions.kick_user_from_channel("user1", "user2", "some_channel")
     result = kick_user_from_channel(slack_user_workspace, {})
     assert result.result_code == ResultCode.failure
     assert result.message == "ERROR_MESSAGE"
@@ -540,9 +570,9 @@ def test_kick_user_to_channel_private_channel_expect_success():
     def mocked_kick_from_channel(user_id, channel_id):
         return True, {"ok": True}
 
-    import subatomic_coherence.actions.simple_actions as MockableSimpleActions
+    simple_actions = mockable_simple_actions()
 
-    MockableSimpleActions._try_get_channel_id = MagicMock(return_value="G123456")
+    simple_actions._try_get_channel_id = MagicMock(return_value="G123456")
 
     user1 = SlackUser("user1", "token")
     user1.kick_from_group = mocked_kick_from_channel
@@ -550,6 +580,6 @@ def test_kick_user_to_channel_private_channel_expect_success():
     slack_user_workspace.find_user_client_by_username = MagicMock(return_value=user1)
     slack_user_workspace.find_user_by_username = MagicMock(return_value={"id": "U222222"})
 
-    kick_user_from_channel = SimpleActions.kick_user_from_channel("user1", "user2", "some_channel", is_private=True)
+    kick_user_from_channel = simple_actions.kick_user_from_channel("user1", "user2", "some_channel", is_private=True)
     result = kick_user_from_channel(slack_user_workspace, {})
     assert result.result_code == ResultCode.success
