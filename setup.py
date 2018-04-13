@@ -1,5 +1,10 @@
 import glob
 from distutils.core import setup
+import sys
+import time
+
+version_base = '0.1.2'
+version_modifier = '-rc1'
 
 
 def find_packages(base_package):
@@ -12,9 +17,13 @@ def find_packages(base_package):
         packages += [package_name]
     return packages
 
+if "--test" in sys.argv:
+    sys.argv.remove("--test")
+    version_modifier = "-" + str(int(round(time.time() * 1000)))
+
 setup(
     name='subatomic_coherence',
-    version='0.1.1',
+    version=version_base + version_modifier,
     packages=find_packages("subatomic_coherence"),
     url='https://github.com/absa-subatomic/subatomic_coherence',
     license='Apache License 2.0',
