@@ -20,12 +20,12 @@ def test_expect_message_with_simple_message_from_user_expect_event_returned():
         "user": "U2222222",
         "text": "some text"
     }
-    user.events = [
+    user.load_events([
         expected_event,
         {
             "type": "not_a_message"
         }
-    ]
+    ])
 
     result = SimpleActions._expect_message(user, "U2222222")
     assert result["type"] == "message"
@@ -42,12 +42,12 @@ def test_expect_message_with_subtype_message_from_user_expect_event_returned():
             "text": "some text"
         }
     }
-    user.events = [
+    user.load_events([
         expected_event,
         {
             "type": "not_a_message"
         }
-    ]
+    ])
 
     result = SimpleActions._expect_message(user, "U2222222")
     assert result == expected_event
@@ -61,12 +61,12 @@ def test_expect_message_threaded_message_from_user_expect_event_returned():
         "text": "some text",
         "thread_ts": "1000"
     }
-    user.events = [
+    user.load_events([
         expected_event,
         {
             "type": "not_a_message"
         }
-    ]
+    ])
 
     result = SimpleActions._expect_message(user, "U2222222", is_thread=True)
     assert result == expected_event
@@ -80,7 +80,7 @@ def test_expect_message_thread_message_with_ts_from_user_expect_event_returned()
         "text": "some text",
         "thread_ts": "1000"
     }
-    user.events = [
+    user.load_events([
         expected_event,
         {
             "type": "message",
@@ -88,7 +88,7 @@ def test_expect_message_thread_message_with_ts_from_user_expect_event_returned()
             "text": "some text",
             "thread_ts": "1002"
         }
-    ]
+    ])
 
     result = SimpleActions._expect_message(user, "U2222222", is_thread=True, thread_ts="1000")
     assert result["thread_ts"] == "1000"
@@ -103,7 +103,7 @@ def test_expect_message_with_simple_message_from_channel_expect_event_returned()
         "text": "some text",
         "channel": "G111111"
     }
-    user.events = [
+    user.load_events([
         expected_event,
         {
             "type": "message",
@@ -111,7 +111,7 @@ def test_expect_message_with_simple_message_from_channel_expect_event_returned()
             "text": "some text",
             "channel": "G111112"
         }
-    ]
+    ])
 
     result = SimpleActions._expect_message(user, "U2222222", channel_id="G111111")
     assert result["channel"] == "G111111"
@@ -125,14 +125,14 @@ def test_expect_message_with_matching_text_from_user_ignore_case_expect_event_re
         "user": "U2222222",
         "text": "some text"
     }
-    user.events = [
+    user.load_events([
         expected_event,
         {
             "type": "message",
             "user": "U2222222",
             "text": "some text that is wrong"
         }
-    ]
+    ])
 
     result = SimpleActions._expect_message(user, "U2222222", message_text="SOME TEXT")
     assert result == expected_event
@@ -145,14 +145,14 @@ def test_expect_message_with_matching_text_from_user_case_sensitive_expect_event
         "user": "U2222222",
         "text": "SOME TEXT"
     }
-    user.events = [
+    user.load_events([
         expected_event,
         {
             "type": "message",
             "user": "U2222222",
             "text": "some text"
         }
-    ]
+    ])
 
     result = SimpleActions._expect_message(user, "U2222222", message_text="SOME TEXT", ignore_case=False)
     assert result == expected_event
@@ -511,7 +511,7 @@ def test_expect_channel_created_expect_success():
                 "name": "channel1"
             }
     }
-    user1.events += [event]
+    user1.events.load_event(event)
     result = channel_created_function(slack_user_workspace, {})
     assert result.result_code == ResultCode.success
 
@@ -529,7 +529,7 @@ def test_expect_channel_created_expect_pending_result():
                 "name": "channel2"
             }
     }
-    user1.events += [event]
+    user1.load_events(event)
     result = channel_created_function(slack_user_workspace, {})
     assert result.result_code == ResultCode.pending
 
