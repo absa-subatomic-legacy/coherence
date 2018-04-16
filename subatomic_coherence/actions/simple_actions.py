@@ -168,8 +168,26 @@ def expect_and_store_action_message(from_user_slack_name,
 
 def respond_to_stored_action_message(from_user_slack_name,
                                      event_storage_name,
-                                     attachment_id,
-                                     action_id):
+                                     attachment_ids=None,
+                                     action_ids=None,
+                                     attachment_action_validators=None):
+    if type(attachment_ids) is int:
+        attachment_ids = [attachment_ids]
+    elif attachment_ids is None:
+        attachment_ids = []
+
+    attachment_ids = [int(attachment_id) for attachment_id in attachment_ids]
+
+    if type(action_ids) is int:
+        action_ids = [action_ids]
+    elif action_ids is None:
+        action_ids = []
+
+    action_ids = [int(action_id) for action_id in action_ids]
+
+    if attachment_action_validators is None:
+        attachment_action_validators = []
+
     def respond_to_stored_action_message_function(slack_user_workspace, data_store):
         user_sender = slack_user_workspace.find_user_client_by_username(from_user_slack_name)
         button_event = data_store[event_storage_name]
@@ -177,18 +195,22 @@ def respond_to_stored_action_message(from_user_slack_name,
         service_id = button_event_main_message["bot_id"]
         bot_user_id = button_event_main_message["user"]
         for attachment in button_event_main_message["attachments"]:
-            if attachment["id"] == attachment_id and "actions" in attachment:
+            if "actions" in attachment and (len(attachment_ids) == 0 or int(attachment["id"]) in attachment_ids):
                 for action in attachment["actions"]:
-                    if action["id"] == str(action_id):
-                        result, response = user_sender.attachment_action(service_id, bot_user_id, [action],
-                                                                         attachment_id,
-                                                                         attachment["callback_id"],
-                                                                         button_event["channel"],
-                                                                         button_event_main_message["ts"])
-                        if result:
-                            return TestResult(ResultCode.success)
-                        else:
-                            return TestResult(ResultCode.failure, response.content)
+                    if len(action_ids) == 0 or int(action["id"]) in action_ids:
+                        validated = True
+                        for validator in attachment_action_validators:
+                            validated &= validator(attachment, action)
+                        if validated:
+                            result, response = user_sender.attachment_action(service_id, bot_user_id, [action],
+                                                                             attachment_ids,
+                                                                             attachment["callback_id"],
+                                                                             button_event["channel"],
+                                                                             button_event_main_message["ts"])
+                            if result:
+                                return TestResult(ResultCode.success)
+                            else:
+                                return TestResult(ResultCode.failure, response.content)
 
         return TestResult(ResultCode.failure, "Action or attachment not found.")
 
