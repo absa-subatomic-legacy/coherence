@@ -1,3 +1,4 @@
+import json
 import time
 from enum import Enum
 import traceback
@@ -61,6 +62,9 @@ class TestPortal(TestElement):
                     self.call_stack_message = self._build_simple_stack_message()
                 elif result.result_code is ResultCode.success and isinstance(self.current_action, TestElement) \
                         and self.current_action.has_child:
+                    last_processed_event = slack_users.last_processed_event()
+                    if last_processed_event is not None and len(self.simple_call_stack) > 0:
+                        self.simple_call_stack[-1].accepted_event = last_processed_event
                     self.current_action = self.current_action.next_action
                     self._push_action_onto_stack(self.current_action)
                 elif result.result_code is ResultCode.success:
@@ -82,13 +86,21 @@ class TestPortal(TestElement):
         return TestResult(ResultCode.success)
 
     def _push_action_onto_stack(self, current_action):
-        self.simple_call_stack += [current_action.run_element.__name__]
+        self.simple_call_stack += [CallStackAction(current_action.run_element.__name__)]
 
     def _build_simple_stack_message(self):
         message = self.name
         for call in self.simple_call_stack:
-            message += "\n.then(" + call + ")"
+            message += "\n.then(" + call.name + ")"
+            if call.accepted_event is not None:
+                message += f" - {json.dumps(call.accepted_event)}"
         return message
+
+
+class CallStackAction(object):
+    def __init__(self, name):
+        self.name = name
+        self.accepted_event = None
 
 
 class TestResult(object):

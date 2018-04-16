@@ -64,7 +64,7 @@ class SlackTestSuite(object):
         for slack_user in self.slack_user_workspace.slack_user_clients:
             events = slack_user.client.rtm_read()
             for event in events:
-                slack_user.events.append(event)
+                slack_user.load_events(event)
                 logging.info("User {user} received event {event}"
                              .format(user=slack_user.username, event=json.dumps(event)))
                 if event["type"] == "channel_created":
@@ -108,7 +108,7 @@ class SlackTestSuite(object):
 
     def _clear_event_stores(self):
         for slack_user in self.slack_user_workspace.slack_user_clients:
-            slack_user.events = []
+            slack_user.clear_event_store()
 
     def _configure_workspace(self):
         self.slack_user_workspace.set_workspace_user_details(

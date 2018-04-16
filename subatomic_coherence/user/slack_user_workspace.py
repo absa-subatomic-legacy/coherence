@@ -76,3 +76,10 @@ class SlackUserWorkspace(object):
         if result is None:
             result = self.find_group_by_slack_id(slack_id)
         return result
+
+    def last_processed_event(self):
+        for user in self.slack_user_clients:
+            user_last_event = user.events.last_processed_event
+            if user_last_event is not None:
+                return user_last_event
+        return None

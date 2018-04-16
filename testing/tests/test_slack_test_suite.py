@@ -49,7 +49,7 @@ def test_client_read_event_expect_events_added_to_event_store_of_client():
     user.client.rtm_read = MagicMock(return_value=[event])
     test_suite._read_slack_events()
     assert test_suite.new_events is True
-    assert user.events[-1] == event
+    assert user.events.events[-1] == event
 
 
 def test_client_read_channel_created_event_expect_channel_details_added_to_slack_workspace():

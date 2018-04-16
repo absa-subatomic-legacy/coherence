@@ -15,7 +15,7 @@ class SlackUser(object):
         self.token = slack_token
         self.slack_name = ""
         self.slack_id = ""
-        self.events = []
+        self.events = EventStore()
         self.domain = ""
         self.rate_limiters = {
             self.delete_channel.__name__: RateLimiter(1, 10000)
@@ -100,7 +100,7 @@ class SlackUser(object):
     def delete_channel(self, channel_id):
         rate_limiter = self.rate_limiters[self.delete_channel.__name__]
 
-        wait_time = rate_limiter.wait_time()/1000
+        wait_time = rate_limiter.wait_time() / 1000
         if wait_time > 0:
             sleep(wait_time)
 
@@ -140,8 +140,15 @@ class SlackUser(object):
         else:
             return False, response
 
+    def load_events(self, events):
+        if type(events) in [list, tuple]:
+            for event in events:
+                self.events.load_event(event)
+        else:
+            self.events.load_event(events)
+
     def clear_event_store(self):
-        self.events = []
+        self.events.clear_event_store()
 
     def query_workspace_domain(self):
         domain = None
@@ -228,3 +235,30 @@ class RateLimiter(object):
 
     def log_call(self):
         self.calls += [self.current_milli_time()]
+
+
+class EventStore:
+    def __init__(self):
+        self.events = []
+        self.last_processed_event = None
+        self.next_event_index = 0
+
+    def load_event(self, event):
+        self.events.append(event)
+
+    def clear_event_store(self):
+        self.events = []
+        self.next_event_index = 0
+        self.last_processed_event = None
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        self.last_processed_event = None
+        if self.next_event_index < len(self.events):
+            self.last_processed_event = self.events[self.next_event_index]
+            self.next_event_index += 1
+            return self.last_processed_event
+
+        raise StopIteration

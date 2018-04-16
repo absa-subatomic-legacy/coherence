@@ -1,7 +1,7 @@
 from unittest import mock
 from unittest.mock import MagicMock
 
-from subatomic_coherence.user.slack_user import SlackUser, RateLimiter
+from subatomic_coherence.user.slack_user import SlackUser, RateLimiter, EventStore
 from testing.mocking.mocking import MockRequestsResponse
 
 
@@ -232,3 +232,29 @@ def test_rate_limiter_where_exceeding_count_expect_wait_time_correct():
     limiter.current_milli_time = lambda: 5
     assert limiter.can_call() is False
     assert limiter.wait_time() == 5
+
+
+def test_event_store_load_event_expect_success():
+    event_store = EventStore()
+    event_store.load_event({"id": 5})
+    assert event_store.events[0]["id"] == 5
+
+
+def test_event_store_clear_event_store_expect_success():
+    event_store = EventStore()
+    event_store.load_event({"id": 5})
+    event_store.__next__()
+    event_store.clear_event_store()
+    assert len(event_store.events) == 0
+    assert event_store.next_event_index == 0
+    assert event_store.last_processed_event is None
+
+
+def test_event_store_iter_expect_success():
+    event_store = EventStore()
+    event_store.load_event({"id": 5})
+    for event in event_store:
+        assert event["id"] == 5
+
+    assert event_store.last_processed_event is None
+    assert event_store.next_event_index == 1
