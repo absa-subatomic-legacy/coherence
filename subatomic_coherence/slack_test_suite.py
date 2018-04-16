@@ -35,8 +35,8 @@ class SlackTestSuite(object):
                 ConsoleLogger.info("Coherence is now listening and logging the event stream.")
                 self.is_listening = True
 
-    def add_slack_user(self, username, token):
-        self.slack_user_workspace.add_slack_user_client(SlackUser(username, token))
+    def add_slack_user(self, username, token, connection_timeout=None):
+        self.slack_user_workspace.add_slack_user_client(SlackUser(username, token, connection_timeout))
 
     def add_test(self, test_name, new_test):
         new_test.name = test_name
