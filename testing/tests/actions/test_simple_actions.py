@@ -345,6 +345,96 @@ def test_respond_to_stored_action_message_expect_success():
     assert result.result_code == ResultCode.success
 
 
+def test_respond_to_stored_action_message_with_validator_expect_success():
+    user1 = SlackUser("user", "token")
+    slack_user_workspace = SlackUserWorkspace()
+    slack_user_workspace.find_user_client_by_username = MagicMock(return_value=user1)
+
+    def attachment_action(p1, p2, p3, p4, p5, p6, p7):
+        return True, MockRequestsResponse(content="success content")
+
+    user1.attachment_action = attachment_action
+
+    def validator(attachment, action):
+        valid = attachment["id"] == 1
+        if valid and "text" in action:
+            valid &= action["text"] == "Something2"
+        return valid
+
+    data_store = {
+        "event": {
+            "type": "message",
+            "bot_id": "1",
+            "user": "U111111",
+            "attachments": [{
+                "id": 1,
+                "actions": [
+                    {
+                        "id": "1",
+                        "text": "Something"
+                    },
+                    {
+                        "id": "2",
+                        "text": "Something2"
+                    }
+                ],
+                "callback_id": "callback_1"
+            }],
+            "channel": "G1231232",
+            "ts": "10000"
+        }
+    }
+    respond_function = SimpleActions.respond_to_stored_action_message("user", "event",
+                                                                      attachment_action_validators=[validator])
+    result = respond_function(slack_user_workspace, data_store)
+    assert result.result_code == ResultCode.success
+
+
+def test_respond_to_stored_action_message_with_validator_expect_failure():
+    user1 = SlackUser("user", "token")
+    slack_user_workspace = SlackUserWorkspace()
+    slack_user_workspace.find_user_client_by_username = MagicMock(return_value=user1)
+
+    def attachment_action(p1, p2, p3, p4, p5, p6, p7):
+        return True, MockRequestsResponse(content="success content")
+
+    user1.attachment_action = attachment_action
+
+    def validator(attachment, action):
+        valid = attachment["id"] == 1
+        if valid and "text" in action:
+            valid &= action["text"] == "Something3"
+        return valid
+
+    data_store = {
+        "event": {
+            "type": "message",
+            "bot_id": "1",
+            "user": "U111111",
+            "attachments": [{
+                "id": 1,
+                "actions": [
+                    {
+                        "id": "1",
+                        "text": "Something"
+                    },
+                    {
+                        "id": "2",
+                        "text": "Something2"
+                    }
+                ],
+                "callback_id": "callback_1"
+            }],
+            "channel": "G1231232",
+            "ts": "10000"
+        }
+    }
+    respond_function = SimpleActions.respond_to_stored_action_message("user", "event",
+                                                                      attachment_action_validators=[validator])
+    result = respond_function(slack_user_workspace, data_store)
+    assert result.result_code == ResultCode.failure
+
+
 def test_respond_to_stored_action_message_expect_failure():
     user1 = SlackUser("user", "token")
     slack_user_workspace = SlackUserWorkspace()
