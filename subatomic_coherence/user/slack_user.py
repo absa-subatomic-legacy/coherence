@@ -13,7 +13,9 @@ class SlackUser(object):
         self.username = username
         self.client = SlackClient(slack_token)
         self.token = slack_token
-        self.connect_timeout = connect_timeout/1000
+        if connect_timeout is not None:
+            connect_timeout = connect_timeout / 1000.0
+        self.connect_timeout = connect_timeout
         self.slack_name = ""
         self.slack_id = ""
         self.events = EventStore()
