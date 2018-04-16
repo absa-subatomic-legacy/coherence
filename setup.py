@@ -4,7 +4,7 @@ import sys
 import time
 
 version_base = '0.1.2'
-version_modifier = '-rc1'
+version_modifier = ''
 
 
 def find_packages(base_package):
