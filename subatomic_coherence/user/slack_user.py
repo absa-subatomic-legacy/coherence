@@ -9,10 +9,11 @@ from subatomic_coherence.logging.console_logging import ConsoleLogger
 
 
 class SlackUser(object):
-    def __init__(self, username, slack_token):
+    def __init__(self, username, slack_token, connect_timeout=None):
         self.username = username
         self.client = SlackClient(slack_token)
         self.token = slack_token
+        self.connect_timeout = connect_timeout/1000
         self.slack_name = ""
         self.slack_id = ""
         self.events = EventStore()
@@ -22,7 +23,7 @@ class SlackUser(object):
         }
 
     def connect(self):
-        connection_result = self.client.rtm_connect()
+        connection_result = self.client.rtm_connect(timeout=self.connect_timeout)
         return connection_result
 
     def link_user_details(self, user_detail_list):
