@@ -47,7 +47,7 @@ def test_client_read_event_expect_events_added_to_event_store_of_client():
     user.slack_id = "U22GU28G2"
     event = {"type": "user_typing", "channel": "CF2HDSDC", "user": "U22GU28G2"}
     user.client.rtm_read = MagicMock(return_value=[event])
-    test_suite._read_slack_events()
+    test_suite._read_slack_events(False)
     assert test_suite.new_events is True
     assert user.events.events[-1] == event
 
@@ -59,7 +59,7 @@ def test_client_read_channel_created_event_expect_channel_details_added_to_slack
     event = {"type": "channel_created",
              "channel": {"id": "C024BE91L", "name": "fun", "created": 1360782804, "creator": "U024BE7LH"}}
     user.client.rtm_read = MagicMock(return_value=[event])
-    test_suite._read_slack_events()
+    test_suite._read_slack_events(False)
     assert test_suite.new_events is True
     assert test_suite.slack_user_workspace.find_channel_by_slack_id("C024BE91L")["name"] == "fun"
 
