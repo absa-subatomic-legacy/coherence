@@ -3,6 +3,7 @@ import json
 from colorama import Fore, Style
 
 import subatomic_coherence.ui.ui as UI
+from subatomic_coherence.ui.ui import TestingStage
 from subatomic_coherence.ui.ui import TestStatus
 from subatomic_coherence.logging.console_logging import ConsoleLogger
 from subatomic_coherence.testing.test import ResultCode
@@ -27,6 +28,9 @@ class SlackTestSuite(object):
         self.recorded_events = []
         self.interactive = interactive
         self.test_status = TestStatus(self)
+        ConsoleLogger.interactive_mode = self.interactive
+        if not self.interactive:
+            self.test_status.current_operation = TestingStage.run_tests
         self.current_recording = False
         self.screen = None
 
@@ -36,18 +40,43 @@ class SlackTestSuite(object):
             exit(1)
         run_tests = len(self.tests) > 0
         while run_tests:
+
+            if len(self.tests) > 0 and self.test_status.break_at_test == self.tests[0].name:
+                self.test_status.current_operation = TestingStage.idle
+
             self._read_slack_events(self.test_status.is_recording)
-            if self.test_status.can_run_tests:
-                self._process_current_test()
+
+            if self.test_status.current_operation in [TestingStage.run_tests, TestingStage.run_one_test]:
+                test_completed = self._process_current_test()
+                if test_completed and self.test_status.current_operation == TestingStage.run_one_test:
+                    self.test_status.current_operation = TestingStage.idle
+
             self._clear_event_stores()
-            run_tests = len(self.tests) > 0 and not self.test_status.current_operation == UI.TestingStage.quit
+
+            if len(self.tests) == 0:
+                self.test_status.next_test = "None"
+                if self.interactive and self.test_status.current_operation == TestingStage.run_tests:
+                    self.test_status.current_operation = TestingStage.idle
+                elif not self.interactive:
+                    self.test_status.current_operation = TestingStage.quit
+            else:
+                self.test_status.next_test = self.tests[0].name
+
+            run_tests = not self.test_status.current_operation == TestingStage.quit
             if self.interactive:
                 UI.update_screen(self._get_screen(), self.test_status)
+
         if len(self.recorded_events) > 0:
+            ConsoleLogger.interactive_mode = False
             ConsoleLogger.success("The following events were successfully recorded (ordered by timestamp):")
             self.recorded_events = sorted(self.recorded_events, key=lambda entry: entry.time_stamp)
+            ConsoleLogger.info("[")
             for event in self.recorded_events:
-                ConsoleLogger.info(event.json())
+                comma = ","
+                if event == self.recorded_events[-1]:
+                    comma = ""
+                ConsoleLogger.info(event.json() + comma)
+            ConsoleLogger.info("]")
 
     def add_slack_user(self, username, token, connection_timeout=None):
         self.slack_user_workspace.add_slack_user_client(SlackUser(username, token, connection_timeout))
@@ -89,6 +118,7 @@ class SlackTestSuite(object):
                 self.new_events = True
 
     def _process_current_test(self):
+        test_completed = False
         if len(self.tests) > 0:
             current_test = self.tests[0]
             if self.new_events:
@@ -105,6 +135,7 @@ class SlackTestSuite(object):
                               f"\n{Fore.RED}Result Message: {Fore.YELLOW}{result.message}{Style.RESET_ALL}"
                     ConsoleLogger.log(message)
                 self.tests = self.tests[1:]
+                test_completed = True
 
             if len(self.tests) == 0:
                 total_tests = str(len(self.successful_tests) + len(self.failed_tests))
@@ -122,6 +153,7 @@ class SlackTestSuite(object):
                                f"{Fore.RED}Result Message: {Fore.YELLOW}{test.message}\n\n{Style.RESET_ALL}"
 
                 ConsoleLogger.log(summary)
+        return test_completed
 
     def _clear_event_stores(self):
         for slack_user in self.slack_user_workspace.slack_user_clients:
