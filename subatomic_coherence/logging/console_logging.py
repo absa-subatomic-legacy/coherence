@@ -1,7 +1,6 @@
 import logging
-import string
-
 import re
+
 from colorama import Style, Fore
 
 
