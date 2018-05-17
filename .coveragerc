@@ -1,0 +1,2 @@
+[run]
+omit = subatomic_coherence/ui/*
