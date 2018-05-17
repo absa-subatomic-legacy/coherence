@@ -61,7 +61,7 @@ class MainMenu(Frame):
         self._current_option_count = 0
         label_original = self.palette["label"]
         self.palette["label"] = (Screen.COLOUR_WHITE, label_original[1], label_original[2])
-        self.log = ListBox(Widget.FILL_FRAME, [], add_scroll_bar=True)
+        self.log = ListBox(Widget.FILL_FRAME, [])
 
         self._create_menu()
 

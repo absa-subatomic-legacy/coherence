@@ -53,30 +53,13 @@ class SlackTestSuite(object):
 
             self._clear_event_stores()
 
-            if len(self.tests) == 0:
-                self.test_status.next_test = "None"
-                if self.interactive and self.test_status.current_operation == TestingStage.run_tests:
-                    self.test_status.current_operation = TestingStage.idle
-                elif not self.interactive:
-                    self.test_status.current_operation = TestingStage.quit
-            else:
-                self.test_status.next_test = self.tests[0].name
+            self._update_test_status()
 
             run_tests = not self.test_status.current_operation == TestingStage.quit
             if self.interactive:
                 UI.update_screen(self._get_screen(), self.test_status)
 
-        if len(self.recorded_events) > 0:
-            ConsoleLogger.interactive_mode = False
-            ConsoleLogger.success("The following events were successfully recorded (ordered by timestamp):")
-            self.recorded_events = sorted(self.recorded_events, key=lambda entry: entry.time_stamp)
-            ConsoleLogger.info("[")
-            for event in self.recorded_events:
-                comma = ","
-                if event == self.recorded_events[-1]:
-                    comma = ""
-                ConsoleLogger.info(event.json() + comma)
-            ConsoleLogger.info("]")
+        self._log_recorded_events()
 
     def add_slack_user(self, username, token, connection_timeout=None):
         self.slack_user_workspace.add_slack_user_client(SlackUser(username, token, connection_timeout))
@@ -116,6 +99,16 @@ class SlackTestSuite(object):
                 if event["type"] == "channel_created":
                     self.slack_user_workspace.workspace_channels.append(event["channel"])
                 self.new_events = True
+
+    def _update_test_status(self):
+        if len(self.tests) == 0:
+            self.test_status.next_test = "None"
+            if self.interactive and self.test_status.current_operation == TestingStage.run_tests:
+                self.test_status.current_operation = TestingStage.idle
+            elif not self.interactive:
+                self.test_status.current_operation = TestingStage.quit
+        else:
+            self.test_status.next_test = self.tests[0].name
 
     def _process_current_test(self):
         test_completed = False
@@ -190,6 +183,19 @@ class SlackTestSuite(object):
         if self.interactive and self.screen is None:
             self.screen = UI.initialise(self.test_status)
         return self.screen
+
+    def _log_recorded_events(self):
+        if len(self.recorded_events) > 0:
+            ConsoleLogger.interactive_mode = False
+            ConsoleLogger.success("The following events were successfully recorded (ordered by timestamp):")
+            self.recorded_events = sorted(self.recorded_events, key=lambda entry: entry.time_stamp)
+            ConsoleLogger.info("[")
+            for event in self.recorded_events:
+                comma = ","
+                if event == self.recorded_events[-1]:
+                    comma = ""
+                ConsoleLogger.info(event.json() + comma)
+            ConsoleLogger.info("]")
 
 
 class RecordedEvent(object):
