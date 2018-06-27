@@ -1,3 +1,18 @@
+from subatomic_coherence.testing.test import TestResult, ResultCode
+
+
+def expect_event(user, event_template):
+    def expect_event_function(slack_user_workspace, data_store):
+        user_client = slack_user_workspace.find_user_client_by_username(user)
+        event_verifier = EventVerifier(event_template)
+        for event in user_client.events:
+            if event_verifier.verify(event):
+                return TestResult(ResultCode.success)
+        return TestResult(ResultCode.pending)
+
+    return expect_event_function
+
+
 class EventVerifier(object):
     def __init__(self, event_template):
         self.event_template = event_template
