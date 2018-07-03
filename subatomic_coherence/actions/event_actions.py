@@ -126,6 +126,7 @@ class EventPatternGroup(object):
 
     def add_event_pattern(self, event_pattern):
         self.event_patterns += [event_pattern]
+        self.calculate_depth()
 
     def calculate_depth(self):
         reference_property_stack = self.event_patterns[0].property_stack
@@ -166,11 +167,13 @@ class EventPattern(object):
         self.property_stack = []
 
     def match(self, value):
-        if self.match_implementation(value):
+        matched_value = self.match_implementation(value)
+        if matched_value:
             self.matched = True
             self.matched_value = value
-        else:
+        elif self.group_id is None:
             self.matched = False
+        # dont set matched to false for groups unless reset is called
         return self.matched
 
     def match_implementation(self, value):
