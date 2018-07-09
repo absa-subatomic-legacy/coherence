@@ -1,5 +1,3 @@
-from enum import Enum
-
 from subatomic_coherence.testing.test import TestResult, ResultCode
 
 
@@ -16,6 +14,49 @@ def expect_event(user, event_template):
 
 
 class EventVerifier(object):
+    """
+    The EventVerifier class operates on some complicated logic and deserves a small write up to help future developers
+    understand the functionality. The core idea is that we want to be able to define a template, and verify whether or
+    not an event (or any data structure really) matches this template. We may also want to store some of the data from
+    the matched event.
+
+    For a basic example, start by defining a template. The template is only made of basic types: scalars, lists, and
+    dictionaries, the root type is always a dictionary. Now given some data structure, begin by looping over the
+    properties of the template. (verify_dict_property)
+        - If the property maps to a scalar see if there is a value in the event in the current level
+        (e.g. root property initially) that matches the scalar. (fall through condition in verify_property)
+        - If the property maps to a list, see if there is a value in the event in the current level that is also a list
+            - If yes: loop through the template list entries and perform this list of checks against the event list
+            (verify_list_property)
+        - If the property maps to a dict, see if there is a value in the event in the current level that in also a dict
+            - Perform this same set of checks against the event dictionary (verify_dict_property)
+
+    The implementation is done recursively, so essentially the algorithm keeps pulling out sub properties and from the
+    template and comparing them to matching sub properties in the event.
+
+    A more complicated example now comes in when we want to match/store values by groups in different sub properties.
+    E.g. only store the value if a dict property with: a scalar child property matching the event, and a dict child
+    property, which itself has a child list property with a scalar that matches the event. EventPattern groups are
+    introduced to handle these cases. These store lists of pattern matchers in the template and overall the group will
+    only be considered matched if all the pattern matchers in this group are matched successfully. In order to build
+    these event groups, the template now needs to be initially parsed, during which, any EventPattern's with the
+    same group_id will be added to an EventPatternGroup. Additionally, we need to ensure that we are not doing partial
+    matching. I.e. The property matching template tree must only match properties for a single parent. If the recursive
+    matching matches the parent and some sub properties, then, later in a different sub structure again matches the
+    parent but now matches the other half od the sub properties, this could be marked as a successful group match even
+    though no single property tree matched the template. In order to prevent this, the groups need to be reset to
+    nothing within them being matched if the encapsulating property tree is exited. To handle this we introduce the
+    EventPatternContext which manages all the group status's along with introducing a depth concept for a group. The
+    depth concept is finding the recursive level of the common ancestor of all properties within a group. If the
+    recursive level is ever smaller than the groups depth level, the EventPatternContext will mark all the
+    EventPatternGroup EventPatterns as not matched. This will prevent the partial matching described earlier.
+
+    This covers the basics of how the algorithm works. It still has edges cases that may not fit the spec of what is
+    expected but that is really depends on what one would actually expected to happen in such cases which is logically
+    ambiguous regardless. Such cases should be handled by fine grained conditional checks as was used before the
+    event pattern matching was introduced.
+    """
+
     def __init__(self, event_template):
         self.event_template = event_template
         self.stored_values = {}
