@@ -166,6 +166,38 @@ def expect_and_store_action_message(from_user_slack_name,
     return expect_and_store_action_message_function
 
 
+def respond_to_custom_stored_action_message(from_user_slack_name,
+                                            service_id_key="service_id",
+                                            bot_user_id_key="bot_user_id",
+                                            attachment_id_key="attachment_id",
+                                            action_key="action",
+                                            call_back_id_key="callback_id",
+                                            channel_key="channel",
+                                            ts_key="ts"):
+    def respond_to_custom_stored_action_message_function(slack_user_workspace, data_store):
+        user_sender = slack_user_workspace.find_user_client_by_username(from_user_slack_name)
+        service_id = data_store[service_id_key]
+        bot_user_id = data_store[bot_user_id_key]
+        attachment_id = data_store[attachment_id_key]
+        action = data_store[action_key]
+        call_back_id = data_store[call_back_id_key]
+        channel = data_store[channel_key]
+        ts = data_store[ts_key]
+        result, response = user_sender.attachment_action(service_id,
+                                                         bot_user_id,
+                                                         [action],
+                                                         attachment_id,
+                                                         call_back_id,
+                                                         channel,
+                                                         ts)
+        if result:
+            return TestResult(ResultCode.success)
+        else:
+            return TestResult(ResultCode.failure, response.content)
+
+    return respond_to_custom_stored_action_message_function
+
+
 def respond_to_stored_action_message(from_user_slack_name,
                                      event_storage_name,
                                      attachment_ids=None,
