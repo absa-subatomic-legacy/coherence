@@ -1,5 +1,10 @@
+from unittest.mock import MagicMock
+
 from subatomic_coherence.actions.event_actions import WildCardEventPattern, SimpleEventPattern, EventPatternGroup, \
-    EventPatternContext, EventVerifier
+    EventPatternContext, EventVerifier, expect_event
+from subatomic_coherence.testing.test import ResultCode
+from subatomic_coherence.user.slack_user import SlackUser
+from subatomic_coherence.user.slack_user_workspace import SlackUserWorkspace
 
 
 def test_wild_card_event_pattern_expect_match():
@@ -516,3 +521,30 @@ def test_event_verifier_expect_event_pattern_group_match_complex_failed():
     })
 
     assert not result
+
+
+def test_expect_event_with_simple_event_expect_values_success_and_values_stored():
+    user = SlackUser("user", "token")
+    slack_user_workspace = SlackUserWorkspace()
+    slack_user_workspace.find_user_client_by_username = MagicMock(return_value=user)
+    event_template = {
+        "name": "user",
+        "id": "U2222222",
+        "text": "{{store,some text}}"
+    }
+    user.load_events([
+        {
+            "name": "user",
+            "id": "U2222222",
+            "text": "some text"
+        },
+        {
+            "type": "not_a_message"
+        }
+    ])
+
+    expect_event_function = expect_event(user, event_template)
+    store = {}
+    result = expect_event_function(slack_user_workspace, store)
+    assert result.result_code == ResultCode.success
+    assert store["store"] == "some text"

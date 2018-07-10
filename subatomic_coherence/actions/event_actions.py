@@ -7,6 +7,8 @@ def expect_event(user, event_template):
         event_verifier = EventVerifier(event_template)
         for event in user_client.events:
             if event_verifier.verify(event):
+                for key in event_verifier.stored_values:
+                    data_store[key] = event_verifier.stored_values[key]
                 return TestResult(ResultCode.success)
         return TestResult(ResultCode.pending)
 
