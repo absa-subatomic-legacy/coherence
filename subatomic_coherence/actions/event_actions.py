@@ -76,15 +76,22 @@ class EventVerifier(object):
         return False
 
     def verify_list_property(self, base_property, event_property, depth):
-        self.event_pattern_context.reset_groups(depth)
         verified = False
         if isinstance(event_property, list):
+            self.event_pattern_context.reset_groups(depth)
             for event_entry in event_property:
                 verified |= self.verify_property(base_property, event_entry, depth + 1)
         return verified
 
     def verify_property(self, base_property, event_property, depth=0):
         self.event_pattern_context.reset_groups(depth)
+        # This early check allows for ComplexEventPattern to work
+        if isinstance(base_property, EventPattern):
+            if base_property.match(event_property):
+                self.event_pattern_context.store_result(base_property, self.stored_values)
+                return True
+            return False
+
         if isinstance(base_property, dict):
             verified = True
             for sub_property in base_property:
@@ -95,11 +102,6 @@ class EventVerifier(object):
             for base_entry in base_property:
                 verified &= self.verify_list_property(base_entry, event_property, depth + 1)
             return verified
-        elif isinstance(base_property, EventPattern):
-            if base_property.match(event_property):
-                self.event_pattern_context.store_result(base_property, self.stored_values)
-                return True
-            return False
         else:
             cleaned_base_property = self.clean_value(base_property)
             if cleaned_base_property == "*":
@@ -185,7 +187,7 @@ class EventPatternGroup(object):
     def reset_if_necessary(self, depth):
         if depth == self.reset_depth:
             for event_pattern in self.event_patterns:
-                event_pattern.matched = False
+                event_pattern.reset()
 
     def is_fully_matched(self):
         fully_matched = True
@@ -199,6 +201,7 @@ class EventPatternGroup(object):
         if self.is_fully_matched():
             for pattern in self.event_patterns:
                 pattern.store_value(value_store)
+                pattern.reset()
 
 
 class EventPattern(object):
@@ -226,6 +229,9 @@ class EventPattern(object):
         if self.storage_name is not None and self.matched:
             value_store[self.storage_name] = self.matched_value
 
+    def reset(self):
+        self.matched = False
+
 
 class WildCardEventPattern(EventPattern):
     def __init__(self, storage_name=None, group_id=None):
@@ -242,3 +248,27 @@ class SimpleEventPattern(EventPattern):
 
     def match_implementation(self, value):
         return self.expected_value == value
+
+
+class ComplexEventPattern(EventPattern):
+    def __init__(self, template, storage_name, group_id=None):
+        super().__init__(storage_name, group_id)
+        self.template = template
+        self.event_verifier = EventVerifier(template)
+
+    def match_implementation(self, value):
+        matched = self.event_verifier.verify(value)
+        if matched:
+            self.matched_value = value
+
+        return matched
+
+    def store_value(self, value_store):
+        if self.matched:
+            value_store[self.storage_name] = self.matched_value
+            for key in self.event_verifier.stored_values:
+                value_store[key] = self.event_verifier.stored_values[key]
+
+    def reset(self):
+        self.matched = False
+        self.event_verifier.stored_values = {}

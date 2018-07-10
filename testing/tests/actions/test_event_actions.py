@@ -1,7 +1,7 @@
 from unittest.mock import MagicMock
 
 from subatomic_coherence.actions.event_actions import WildCardEventPattern, SimpleEventPattern, EventPatternGroup, \
-    EventPatternContext, EventVerifier, expect_event
+    EventPatternContext, EventVerifier, expect_event, ComplexEventPattern
 from subatomic_coherence.testing.test import ResultCode
 from subatomic_coherence.user.slack_user import SlackUser
 from subatomic_coherence.user.slack_user_workspace import SlackUserWorkspace
@@ -548,3 +548,76 @@ def test_expect_event_with_simple_event_expect_values_success_and_values_stored(
     result = expect_event_function(slack_user_workspace, store)
     assert result.result_code == ResultCode.success
     assert store["store"] == "some text"
+
+
+def test_complex_event_pattern_expect_success():
+    verifier = EventVerifier({
+        "name": SimpleEventPattern("Kieran"),
+        "list": [
+            {
+                "id": SimpleEventPattern("1", group_id=1),
+                "child": ComplexEventPattern(
+                    {
+                        "child_id": WildCardEventPattern(storage_name="child_id")
+                    }
+                    , "child", group_id=1)
+            }
+        ]
+    })
+
+    result = verifier.verify({
+        "name": "Kieran",
+        "list": [
+            {
+                "id": "1",
+                "child": {
+                    "child_id": "1"
+                }
+            },
+            {
+                "id": "2",
+                "child": {
+                    "child_id": "2"
+                }
+            }
+        ]
+    })
+
+    assert result
+    assert verifier.stored_values["child_id"] == "1"
+
+
+def test_complex_event_pattern_expect_failure():
+    verifier = EventVerifier({
+        "name": SimpleEventPattern("Kieran"),
+        "list": [
+            {
+                "id": SimpleEventPattern("1", group_id=1),
+                "child": ComplexEventPattern(
+                    {
+                        "child_id": WildCardEventPattern(storage_name="child_id")
+                    }
+                    , "child", group_id=1)
+            }
+        ]
+    })
+
+    result = verifier.verify({
+        "name": "Kieran",
+        "list": [
+            {
+                "id": "2",
+                "child": {
+                    "child_id": "1"
+                }
+            },
+            {
+                "id": "3",
+                "child": {
+                    "child_id": "2"
+                }
+            }
+        ]
+    })
+
+    assert not result
