@@ -50,20 +50,6 @@ def test_test_portal_test_timeout_expect_failure():
     assert result.message.startswith("Time out occurred when calling") is True
 
 
-def test_test_element_then_expect_next_action_set_correctly():
-    def mock_action1(slack_user_workspace, data_store):
-        return TestResult(ResultCode.success)
-
-    def mock_action2(slack_user_workspace, data_store):
-        return TestResult(ResultCode.failure)
-
-    # this wont actually work but works for test purposes
-    test_element = TestElement(None)
-    test_element.then(mock_action1).then(mock_action2)
-    assert test_element.next_action.run_element == mock_action1
-    assert test_element.next_action.next_action.run_element == mock_action2
-
-
 def test_test_portal_data_store_expect_data_persisted_between_steps():
     def mock_action1(slack_user_workspace, data_store):
         data_store["action1"] = "value1"

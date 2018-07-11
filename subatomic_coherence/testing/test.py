@@ -16,6 +16,19 @@ class TestElement(object):
         self.start_time = 0
         self.is_started = False
         self.call_stack_message = ""
+        self.parent = None
+
+
+class TestPortal(TestElement):
+    def __init__(self, timeout=15000):
+        super().__init__(self.start_test, timeout)
+        self.current_action = self
+        self.is_live = True
+        self.message = ResultCode.pending.name
+        self.name = "Unnamed Test"
+        self.data_store = {}
+        self.simple_call_stack = []
+        self.clean_up = lambda slack_user_workspace: None
 
     def then(self, next_action, timeout=15000):
         found_leaf_then = False
@@ -30,16 +43,11 @@ class TestElement(object):
 
         return self
 
+    def set_clean_up(self, clean_up_function):
+        self.clean_up = clean_up_function
 
-class TestPortal(TestElement):
-    def __init__(self, timeout=15000):
-        super().__init__(self.start_test, timeout)
-        self.current_action = self
-        self.is_live = True
-        self.message = ResultCode.pending.name
-        self.name = "Unnamed Test"
-        self.data_store = {}
-        self.simple_call_stack = []
+    def tidy(self, slack_user_workspace):
+        self.clean_up(slack_user_workspace)
 
     def test(self, slack_users):
         # noinspection PyBroadException
