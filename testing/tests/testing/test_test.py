@@ -152,3 +152,12 @@ def test_test_portal_push_action_onto_stack_expect_correct_function_name_pushed_
     test = TestPortal().then(some_function)
     test._push_action_onto_stack(test.current_action.next_action)
     assert test.simple_call_stack[0].name == "some_function"
+
+
+def test_test_portal_add_clean_up_function_expect_clean_up_function_created():
+    def some_function(slack_user_workspace):
+        pass
+
+    test = TestPortal().set_clean_up(some_function)
+
+    assert test.clean_up == some_function
