@@ -172,3 +172,135 @@ test_suite.add_test("test_send_message_to_channel", TestPortal() \
                     .then(expect_any_channel_created_and_store_name("user_to_listen_as"))
                     .then(send_message_to_channel("user_to_send_as", "Hello")))
 ``` 
+
+### Using Event Templates
+Event templates are a way for a user to define a template describing the expected event. The benefit of this approach is that it avoids the user having to create multiple functions with large nested if-else blocks to identify different events. Instead events can be described by a template which can be given to the the `event_actions.expect_event` function which will handle identification of matching events. The downside though is that some cases can get complicated, in which case if you are not comfortable debugging these event templates the previously mentioned methodologies should be usages.
+
+The `event_actions.expect_event` function takes a `SlackUser` and a template defining the event. Templates are defined as data structures with the root being a dictionary consisting of any number of child scalar, dictionary, or list values. Matching values can be enforced using two approaches: Simple approach and EventPattern approach.
+
+#### Simple Approach
+The Simple approach supports 1 to 1 matching, wildcard matching, and matched value storage. The following is an example of such an event template:
+
+```python
+{
+  "one_to_one": "expected_value",
+   "wild_card": "*",
+   "stored_value": "{{storage_name,expected_value}}"
+}
+```
+
+The event template above would match the following event for example:
+
+```python
+{
+   "one_to_one": "expected_value",
+   "wild_card": "any value here",
+   "stored_value": "expected_value",
+   "any_number_of_other_values_not_in_template": [ ]
+}
+```
+
+In the above example, the value `"expected_value"` will be stored in the test storage dictionary with a key of "storage_name".
+
+#### EventPattern approach
+This approach involves using children of the `event_actions.EventPattern` class to match the values. This approach is more powerful as complicated matching functions can be defined (e.g. if regex matching was needed it would use this approach). By default this approach has built in 1 to 1 matching, and wild card matching. These are defined by the children classes `SimpleEventPattern`, `WildCardEventPattern`, and the `ComplexEventPattern`. These are used in a very similar fashion to the Simple approach definitions.
+For example, the equivalent of the Simple Approach example would be:
+
+```python
+{
+  "one_to_one": SimpleEventPattern("expected_value"),
+   "wild_card": WildCardEventPattern(),
+   "stored_value": SimpleEventPattern("expected_value", storage_name = "storage_name")
+}
+```
+Additionally, the EventPattern approach brings group matching. That is, the event is only considered matched if the entire group(or all groups) of EventPatterns match successfully. Such a template would be defined for example as follows:
+
+```python
+{
+   "name": SimpleEventPattern("expected name", group_id = 1),
+   "list": [
+      {
+        "child": SimpleEventPattern("1", group_id = 1, storage_name = "child_value")
+      }
+   ]
+}
+```
+
+Such a template would only match/store the value `"child_value"` if the event had a property `list` with a dictionary entry that a `child` property with a value of `"1"`, in addition to root property `name` with a value "expected name". For example, the following event would match successfully:
+```python
+{
+  "name": "expected name",
+  "list": [
+     {
+       "child": "1"
+     },
+     {
+       "child": "not important value"
+     }
+  ]
+}
+```
+With the `"child_value"` stored being `"1"`. The following event would fail to match on the other hand:
+```python
+{
+  "name": "expected name",
+  "list": [
+     {
+       "child": "a useless value"
+     },
+     {
+       "child": "not important value"
+     }
+  ]
+}
+```
+
+The `ComplexEventPattern` allows capturing of dictionary value whilst performing checks within the dictionary itself. An example of it's usage would be as follows:
+
+```python
+{
+  "name": "expected name",
+  "list": [
+     ComplexEventPattern({
+       "child": "expected_value"
+     }, "storage_name")
+  ]
+}
+```
+This will match an event where the `"list"` property has a dictionary entry with a `"child"` property that has a value `"expected_value"`. The entire dictionary entry will then be stored against the `"storage_name"` key. For example, when run against the event
+
+```python
+{
+  "name": "expected name",
+  "list": [
+     {
+       "child": "expected_value",
+       "another_key": "another value"
+     },
+     {
+       "child": "not important value"
+     }
+  ]
+}
+```
+The value
+```python
+{
+  "child": "expected_value",
+  "another_key": "another value"
+}
+```
+will be stored against the `"storage_name"` key in the data store.
+
+### Clean Up After Tests
+Cleaning up after testing can be important to keep an integration testing environment from getting cluttered or restoring it to a state that is necessary for the next time the integration tests are run. To this end when defining a test chain it is possible to add a clean up function. The goal of the clean up function is primarily to clean the slack workspace but can be used to run anything the user wishes after the test suite has run (probably cleaning up any integration points). This is done by calling the `set_clean_up` function on a TestPortal. The `set_clean_up` function takes a function with one parameter which is a `SlackUserWorkspace` that will be passed to the clean up function by the `SlackTestSuite`. For example:
+
+```python
+def clean_up(slack_user_workspace):
+  main_user_client = slack_user_workspace.find_user_client_by_username("user_name")
+  channel_id = slack_user_workspace.find_channel_by_name("channel_name")["id"]
+  main_user_client.delete_channel(channel_id)
+
+TestPortal().then(create_slack_channel).set_clean_up(clean_up)
+```
+This creates a `TestPortal` which will create some slack channel, then after the entire test suite runs, the created slack channel will be deleted.
