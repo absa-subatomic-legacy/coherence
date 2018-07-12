@@ -1,12 +1,14 @@
-import logging
 import json
+import logging
+import traceback
+
 from colorama import Fore, Style
 
 import subatomic_coherence.ui.ui as UI
-from subatomic_coherence.ui.ui import TestingStage
-from subatomic_coherence.ui.ui import TestStatus
 from subatomic_coherence.logging.console_logging import ConsoleLogger
 from subatomic_coherence.testing.test import ResultCode
+from subatomic_coherence.ui.ui import TestStatus
+from subatomic_coherence.ui.ui import TestingStage
 from subatomic_coherence.user.slack_user import SlackUser
 from subatomic_coherence.user.slack_user_workspace import SlackUserWorkspace
 
@@ -17,6 +19,7 @@ class SlackTestSuite(object):
         self.description = description
         self.slack_user_workspace = SlackUserWorkspace()
         self.tests = []
+        self._full_test_list = []
         self.total_tests = 0
         self.successful_tests = []
         self.failed_tests = []
@@ -40,7 +43,6 @@ class SlackTestSuite(object):
             exit(1)
         run_tests = len(self.tests) > 0
         while run_tests:
-
             if len(self.tests) > 0 and self.test_status.break_at_test == self.tests[0].name:
                 self.test_status.current_operation = TestingStage.idle
 
@@ -59,6 +61,7 @@ class SlackTestSuite(object):
             if self.interactive:
                 UI.update_screen(self._get_screen(), self.test_status)
 
+        self._run_clean_up()
         self._log_recorded_events()
 
     def add_slack_user(self, username, token, connection_timeout=None):
@@ -67,6 +70,7 @@ class SlackTestSuite(object):
     def add_test(self, test_name, new_test):
         new_test.name = test_name
         self.tests.append(new_test)
+        self._full_test_list.append(new_test)
         self.total_tests += 1
 
     def _connect_clients(self):
@@ -196,6 +200,16 @@ class SlackTestSuite(object):
                     comma = ""
                 ConsoleLogger.info(event.json() + comma)
             ConsoleLogger.info("]")
+
+    def _run_clean_up(self):
+        for test in self._full_test_list:
+            ConsoleLogger.info(f"Running clean up for test: {test.name}")
+            # noinspection PyBroadException
+            try:
+                test.tidy(self.slack_user_workspace)
+            except:
+                error_stack_trace = traceback.format_exc()
+                ConsoleLogger.info("Clean up error ignored: " + error_stack_trace)
 
 
 class RecordedEvent(object):

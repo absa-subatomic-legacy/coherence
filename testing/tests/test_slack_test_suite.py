@@ -137,3 +137,17 @@ def test_update_test_status_with_no_tests_normal_mode_expect_test_status_quit():
     test_suite.test_status.current_operation = TestingStage.run_tests
     test_suite._update_test_status()
     assert test_suite.test_status.current_operation == TestingStage.quit
+
+
+def test_process_current_test_expect_test_passes():
+    test_suite = SlackTestSuite()
+    some_var = 0
+
+    def clean_up(workspace):
+        nonlocal some_var
+        some_var = 2
+
+    test = TestPortal().set_clean_up(clean_up)
+    test_suite.add_test("test", test)
+    test_suite._run_clean_up()
+    assert some_var == 2
