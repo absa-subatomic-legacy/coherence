@@ -45,6 +45,7 @@ class TestPortal(TestElement):
 
     def set_clean_up(self, clean_up_function):
         self.clean_up = clean_up_function
+        return self
 
     def tidy(self, slack_user_workspace):
         self.clean_up(slack_user_workspace)

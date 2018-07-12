@@ -1,14 +1,14 @@
-import logging
 import json
+import logging
+import traceback
 
-import sys
 from colorama import Fore, Style
 
 import subatomic_coherence.ui.ui as UI
-from subatomic_coherence.ui.ui import TestingStage
-from subatomic_coherence.ui.ui import TestStatus
 from subatomic_coherence.logging.console_logging import ConsoleLogger
 from subatomic_coherence.testing.test import ResultCode
+from subatomic_coherence.ui.ui import TestStatus
+from subatomic_coherence.ui.ui import TestingStage
 from subatomic_coherence.user.slack_user import SlackUser
 from subatomic_coherence.user.slack_user_workspace import SlackUserWorkspace
 
@@ -208,7 +208,8 @@ class SlackTestSuite(object):
             try:
                 test.tidy(self.slack_user_workspace)
             except:
-                ConsoleLogger.info("Clean up error ignored: " + sys.exc_info()[0])
+                error_stack_trace = traceback.format_exc()
+                ConsoleLogger.info("Clean up error ignored: " + error_stack_trace)
 
 
 class RecordedEvent(object):

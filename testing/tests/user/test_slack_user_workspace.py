@@ -60,6 +60,7 @@ def test_find_channel_by_id_expect_failure():
     channel = slack_user_workspace.find_channel_by_slack_id("channel3")
     assert channel is None
 
+
 def test_find_group_by_name_expect_success():
     slack_user_workspace = SlackUserWorkspace()
     slack_user_workspace.set_workspace_groups([{"name": "group1"}, {"name": "group2"}])
