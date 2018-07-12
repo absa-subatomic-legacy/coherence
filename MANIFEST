@@ -3,11 +3,14 @@ setup.py
 subatomic_coherence/__init__.py
 subatomic_coherence/slack_test_suite.py
 subatomic_coherence/actions/__init__.py
+subatomic_coherence/actions/event_actions.py
 subatomic_coherence/actions/simple_actions.py
 subatomic_coherence/logging/__init__.py
 subatomic_coherence/logging/console_logging.py
 subatomic_coherence/testing/__init__.py
 subatomic_coherence/testing/test.py
+subatomic_coherence/ui/__init__.py
+subatomic_coherence/ui/ui.py
 subatomic_coherence/user/__init__.py
 subatomic_coherence/user/slack_user.py
 subatomic_coherence/user/slack_user_workspace.py

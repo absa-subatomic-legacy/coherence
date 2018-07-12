@@ -3,7 +3,7 @@ from distutils.core import setup
 import sys
 import time
 
-version_base = '0.1.2'
+version_base = '0.2.2'
 version_modifier = ''
 
 
@@ -32,5 +32,6 @@ setup(
           'colorama',
           'requests',
           'slackclient',
+          'asciimatics'
       ]
 )
