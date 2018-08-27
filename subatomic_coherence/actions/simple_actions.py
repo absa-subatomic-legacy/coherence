@@ -248,6 +248,26 @@ def respond_to_stored_action_message(from_user_slack_name,
 
     return respond_to_stored_action_message_function
 
+def select_menu_option_from_custom_stored_action_message(
+        selection,
+        action_key="action"):
+    def select_menu_option_from_custom_stored_action_message_function(slack_user_workspace, data_store):
+        action = data_store[action_key]
+        found_selection = False
+        for option in action["options"]:
+            if option["text"] == selection:
+                action["selected_options"] = [{
+                    "value": option["value"]
+                }]
+                found_selection = True
+                break
+
+        if found_selection:
+            return TestResult(ResultCode.success)
+        else:
+            return TestResult(ResultCode.failure)
+
+    return select_menu_option_from_custom_stored_action_message_function
 
 def expect_channel_created(user, channel_name):
     def expect_channel_created_function(slack_user_workspace, data_store):
